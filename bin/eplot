@@ -1,0 +1,91 @@
+#!/usr/bin/env escript
+
+usage() ->
+    Text = 
+	"eplot [options] files\r\n"
+	"Options:\r\n"
+	"\t-o Outfile,  directs the graph to the outfile\r\n"
+	"\t-render_engine Engine :: alpha | opaque, type of render engine\r\n"
+	"\t-type Type :: png | raw_bitmap, output type\r\n"
+	"\t-plot Plot :: plot2d | bar2d, plot type\r\n"
+	"\t-width Width :: integer(), Width\r\n"
+	"\t-height Height :: integer(), Height\r\n"
+	"\t-x_label Label :: string(), X-axis label\r\n"
+	"\t-y_label Label :: string(), Y-axis label\r\n",
+    io:format("~s~n", [Text]),
+    ok.
+
+main([]) -> usage();
+main(Args) ->
+    code:add_patha("/home/egil/coding/projects/eps/percept/ebin"),
+    code:add_patha("/home/otp/eplot/ebin"),
+    Options = parse_args(Args),
+    Input = proplists:get_value(input, Options, []),
+    case proplists:get_value(o, Options) of
+	undefined -> eplot_main:eview(Input, Options);
+	Output    -> eplot_main:png(Input, Output, Options)
+    end.
+
+parse_args(Args) -> parse_args(Args, [{bg_rgba, {255,255,255,255}},{plot, plot2d}]).
+parse_args([], Out) -> Out;
+parse_args([Value0,Value1|Args], Out) ->
+    case Value0 of
+	"-speedup" ->
+	    parse_args([Value1|Args], [{speedup,true}|Out]);
+	"-bg_rgba" ->
+	    parse_args(Args, [{bg_rgba, hexstring2rgb(Value1)}|proplists:delete(bg_rgba, Out)]);
+	"-render_engine" ->
+	    parse_args(Args, [{render_engine, list_to_atom(Value1)}|proplists:delete(render_engine, Out)]);
+	"-type" ->
+	    parse_args(Args, [{type, list_to_atom(Value1)}|proplists:delete(type, Out)]);
+	"-plot" ->
+	    parse_args(Args, [{plot, list_to_atom(Value1)}|proplists:delete(plot, Out)]);
+	[45|KeyString] ->
+	    Key = list_to_atom(KeyString),
+	    case proplists:get_value(Key, Out, []) of
+		undefined -> 
+		    parse_args(Args, [{Key, string2value(Value1)}|Out]);
+		_ ->
+		    parse_args(Args, [{Key, string2value(Value1)}|proplists:delete(Key, Out)])
+	    end;
+	Value0 ->
+	    case proplists:get_value(input, Out, []) of
+		undefined -> 
+		    parse_args([Value1|Args], [{input, [Value0]}|Out]);
+		Values ->
+		    parse_args([Value1|Args], [{input, [Value0|Values]}|proplists:delete(input, Out)])
+	    end
+    end;
+parse_args([Value|Args], Out) ->
+    case proplists:get_value(input, Out, []) of
+	undefined -> 
+	    parse_args(Args, [{input, [Value]}|Out]);
+	Values ->
+	    parse_args(Args, [{input, [Value|Values]}|proplists:delete(input, Out)])
+    end.
+
+
+hexstring2rgb(Hs = [_R0,_R1,_G0,_G1,_B0,_B1]) -> hexstring2rgb(Hs ++ "FF");
+hexstring2rgb([R0,R1,G0,G1,B0,B1,A0,A1]) ->
+    R = hex2byte(R0)*15 + hex2byte(R1),
+    G = hex2byte(G0)*15 + hex2byte(G1),
+    B = hex2byte(B0)*15 + hex2byte(B1),
+    A = hex2byte(A0)*15 + hex2byte(A1),
+    {R,G,B,A};
+hexstring2rgb(_) -> {255,255,255,255}.
+
+hex2byte(H) when H >= 48, H =<  57 -> H - 48;
+hex2byte(H) when H >= 65, H =<  70 -> H - 65 + 10; 
+hex2byte(H) when H >= 97, H =< 102 -> H - 97 + 10;
+hex2byte(_) -> 0.
+
+string2value(Value) ->
+    case catch list_to_integer(Value) of
+	I when is_integer(I) -> I;
+	_ -> 
+	    case catch list_to_float(Value) of
+		F when is_float(F) -> F;
+		_ -> Value
+	    end
+    end.
+	
