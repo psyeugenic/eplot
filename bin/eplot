@@ -17,8 +17,7 @@ usage() ->
 
 main([]) -> usage();
 main(Args) ->
-    code:add_patha("/home/egil/coding/projects/eps/percept/ebin"),
-    code:add_patha("/home/otp/eplot/ebin"),
+    code:add_patha(filename:join(filename:dirname(escript:script_name()), "../ebin")),
     Options = parse_args(Args),
     Input = proplists:get_value(input, Options, []),
     case proplists:get_value(o, Options) of
