@@ -29,6 +29,9 @@ Eplot usage:
 	-x_ticksize TS,     X-axis ticksize,
 	-y_ticksize TS,     y-axis ticksize,
 
+	example:
+	$ bin/eplot -o test1.png example/data1.dat example/data2.dat
+
 
 egd_chart.erl usage:
 	Se source file info.
