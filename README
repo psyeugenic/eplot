@@ -8,9 +8,9 @@ Eplot is a small graph drawing tool that can be used from command prompt via the
 escript eplot or it could be used from erlang code using egd_graph module.
 
 Dependencies: 
-	- Erlang/OTP, prefferable R13B but earlier shoud work.
+	- Erlang/OTP, prefferable R13B but earlier should work.
 	
-	- wx, if you plan to view graph immedeatly Erlang should be compiled
+	- wx, if you plan to view graph immediately Erlang should be compiled
 	  with wx support enabled. Otherwise only file output can be used.
 		
 
@@ -34,7 +34,7 @@ Eplot usage:
 
 
 egd_chart.erl usage:
-	Se source file info.
+	See source file info.
 
 
 
@@ -52,7 +52,7 @@ should be implemented.
 	- polygon triangluation, filled triangles can be drawn fine but not
 	  polygons.
 	- Truetype support
-	- Line thickness/Stroke size
+	- Line thickness/stroke size
 
 
 
