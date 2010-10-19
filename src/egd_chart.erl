@@ -496,7 +496,7 @@ draw_bar2d_set_colormap(Im, Chart, Font, [{Set, Color}|ColorMap], {X, Y}, Margin
 
 draw_bar2d_set_colormap_step(Im, Chart, Font, ColorMap, {X,Y}, Margin) when (Y + 23) < Margin ->
     draw_bar2d_set_colormap(Im, Chart, Font, ColorMap, {X, Y + 12}, Margin);
-draw_bar2d_set_colormap_step(Im, Chart, Font, ColorMap, {X,Y}, Margin) ->
+draw_bar2d_set_colormap_step(Im, Chart, Font, ColorMap, {X,_Y}, Margin) ->
     draw_bar2d_set_colormap(Im, Chart, Font, ColorMap, {X + 144, 3}, Margin).
 
 draw_bar2d_ytick(Im, Chart, Font) ->
@@ -534,7 +534,7 @@ draw_bar2d_data(Columns, Chart, Font, Im) ->
 
 draw_bar2d_data_columns([], _, _, _, _, _) -> ok;
 draw_bar2d_data_columns([{Name, Bars} | Columns], Chart, Font, Im, Cx, Co) ->
-    {{X0,Y0}, {X1,Y1}} = Chart#chart.bbx,
+    {{_X0,_Y0}, {_X1,Y1}} = Chart#chart.bbx,
 
     Cwb = case Chart#chart.column_width of
 	default -> Co;
@@ -559,8 +559,8 @@ draw_bar2d_data_columns([{Name, Bars} | Columns], Chart, Font, Im, Cx, Co) ->
     draw_bar2d_data_columns(Columns, Chart, Font, Im, Cx + Co, Co).
 
 draw_bar2d_data_bars([], _, _, _, _, _, _) -> ok;
-draw_bar2d_data_bars([{{Color,Set}, Value}|Bars], Chart, Font, Im, Bx, Bo,CS) ->
-    {{X0,Y0}, {X1,Y1}} = Chart#chart.bbx,
+draw_bar2d_data_bars([{{Color,_Set}, Value}|Bars], Chart, Font, Im, Bx, Bo,CS) ->
+    {{_X0,_Y0}, {_X1,Y1}} = Chart#chart.bbx,
     {_, Precision}     = Chart#chart.precision,
     {_, Y}             = xy2chart({0, Value}, Chart),
 
@@ -597,7 +597,7 @@ draw_bar2d_data_bars([{{Color,Set}, Value}|Bars], Chart, Font, Im, Bx, Bo,CS) ->
 
 xy2chart({X,Y}, Chart) ->
     {{Rx0,Ry0}, {_Rx1,_Ry1}} = Chart#chart.ranges,
-    {{Bx0,By0}, {Bx1,By1}} = Chart#chart.bbx,
+    {{Bx0,By0}, {_Bx1,By1}} = Chart#chart.bbx,
     {Dx, Dy} = Chart#chart.dxdy,
     {round(X*Dx + Bx0 - Rx0*Dx), round(By1 - (Y*Dy + By0 - Ry0*Dy - Chart#chart.margin))}. 
 
@@ -647,7 +647,7 @@ precision_level(S, E, N) when is_number(S), is_number(E) ->
 	true ->
 	    % get the ratio on the form of 2-3 significant digits.
 	    V =  2 - math:log10(R),
-	    P = trunc(V + 0.5)
+	    trunc(V + 0.5)
     end;
 precision_level(_, _, _) -> 2.
 
@@ -665,32 +665,32 @@ xy_resulting_ranges({{X0,Y0},{X1,Y1}},{{X2,Y2},{X3,Y3}}) ->
 	 lists:max([Y0,Y1,Y2,Y3])}
     }.
 
-update_dxdy({{Rx0, Ry0}, {Rx1, Ry1}} = A, {{Bx0,By0},{Bx1,By1}} = B) ->
+update_dxdy({{Rx0, Ry0}, {Rx1, Ry1}}, {{Bx0,By0},{Bx1,By1}}) ->
    Dx = divide((Bx1 - Bx0),(Rx1 - Rx0)),
    Dy = divide((By1 - By0),(Ry1 - Ry0)),
    {Dx,Dy}.
 
-divide(T,N) when abs(N) < ?float_error -> 0.0;
+divide(_T,N) when abs(N) < ?float_error -> 0.0;
 %divide(T,N) when abs(N) < ?float_error -> exit({bad_divide, {T,N}});
 divide(T,N) -> T/N.
 
-print_info_chart(Chart) ->
-    io:format("Chart ->~n"),
-    io:format("    type:     ~p~n", [Chart#chart.type]),
-    io:format("    margin:   ~p~n", [Chart#chart.margin]),
-    io:format("    bbx:      ~p~n", [Chart#chart.bbx]),
-    io:format("    ticksize: ~p~n", [Chart#chart.ticksize]),
-    io:format("    ranges:   ~p~n", [Chart#chart.ranges]),
-    io:format("    width:    ~p~n", [Chart#chart.width]),
-    io:format("    height:   ~p~n", [Chart#chart.height]),
-    io:format("    dxdy:     ~p~n", [Chart#chart.dxdy]),
-    ok.
+%print_info_chart(Chart) ->
+%    io:format("Chart ->~n"),
+%    io:format("    type:     ~p~n", [Chart#chart.type]),
+%    io:format("    margin:   ~p~n", [Chart#chart.margin]),
+%    io:format("    bbx:      ~p~n", [Chart#chart.bbx]),
+%    io:format("    ticksize: ~p~n", [Chart#chart.ticksize]),
+%    io:format("    ranges:   ~p~n", [Chart#chart.ranges]),
+%    io:format("    width:    ~p~n", [Chart#chart.width]),
+%    io:format("    height:   ~p~n", [Chart#chart.height]),
+%    io:format("    dxdy:     ~p~n", [Chart#chart.dxdy]),
+%    ok.
 
-string(E, P) when is_atom(E)    -> atom_to_list(E);
-string(E, P) when is_float(E)   -> float_to_maybe_integer_to_string(E, P); 
-string(E, P) when is_integer(E) -> s("~w", [E]);
-string(E, P) when is_binary(E)  -> lists:flatten(binary_to_list(E));
-string(E, P) when is_list(E)    -> s("~s", [E]).
+string(E, _P) when is_atom(E)    -> atom_to_list(E);
+string(E,  P) when is_float(E)   -> float_to_maybe_integer_to_string(E, P); 
+string(E, _P) when is_integer(E) -> s("~w", [E]);
+string(E, _P) when is_binary(E)  -> lists:flatten(binary_to_list(E));
+string(E, _P) when is_list(E)    -> s("~s", [E]).
 
 float_to_maybe_integer_to_string(F, P) ->
     I = trunc(F),

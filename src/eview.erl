@@ -26,7 +26,7 @@ loop(S) ->
 	_E=#wx{event=#wxPaint{}} ->
 	    redraw(S),
 	    loop(S);
-	E=#wx{id=EXIT, event=EV} when EXIT =:= ?wxID_EXIT; is_record(EV, wxClose) ->
+	_E=#wx{id=EXIT, event=EV} when EXIT =:= ?wxID_EXIT; is_record(EV, wxClose) ->
 	    catch wxWindow:'Destroy'(S#s.f),
 	    S#s.notify ! {self(), done},
 	    ok;
