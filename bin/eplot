@@ -1,4 +1,7 @@
 #!/usr/bin/env escript
+%%! -smp enable -sname eplot
+
+-mode(compile).
 
 usage() ->
     Text = 
@@ -17,7 +20,7 @@ usage() ->
 
 main([]) -> usage();
 main(Args) ->
-    code:add_patha(filename:join(filename:dirname(escript:script_name()), "../ebin")),
+    code:add_patha(ebin()),
     Options = parse_args(Args),
     Input = proplists:get_value(input, Options, []),
     case proplists:get_value(o, Options) of
@@ -88,3 +91,11 @@ string2value(Value) ->
 	    end
     end.
 	
+ebin() ->
+    Sname = escript:script_name(),
+    Rname = real_name(Sname),
+    filename:join([filename:dirname(Rname),"..","ebin"]).
+
+real_name(Sname) -> real_name(Sname, file:read_link(Sname)).
+real_name(_, {ok, Rname}) -> real_name(Rname, file:read_link(Rname));
+real_name(Rname, {error, einval}) -> Rname.
