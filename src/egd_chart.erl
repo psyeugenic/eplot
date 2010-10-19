@@ -140,10 +140,8 @@ graph(Data, Options) ->
     % Fonts? Check for text enabling
 
     Font = egd_font:load(filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"])),
-
   
     draw_graphs(Data, Chart, Im),
-    
  
     % estetic crop, necessary?
     {{X0,Y0}, {X1,Y1}} = Chart#chart.bbx,
@@ -247,7 +245,7 @@ draw_graphs([{_, Data}|Datas], ColorIndex, Chart, Im) ->
 draw_graph([], _,_) -> ok;
 draw_graph([Pt1,Pt2|Data], Color, Im) ->
     draw_graph_dot(Pt1, Color, Im),
-    egd:line(Im, Pt1, Pt2, Color),
+    draw_graph_line(Pt1,Pt2, Color, Im),
     draw_graph([Pt2|Data], Color, Im);
 
 draw_graph([Pt|Data], Color, Im) ->
@@ -255,7 +253,17 @@ draw_graph([Pt|Data], Color, Im) ->
     draw_graph(Data, Color, Im).
 
 draw_graph_dot({X,Y}, Color, Im) ->
+    egd:filledEllipse(Im, {X - 3, Y - 3}, {X + 3, Y + 3}, Color);
+draw_graph_dot({X,Y,Ey}, Color, Im) ->
+    egd:line(Im, {X, Y - Ey}, {X, Y + Ey}, Color),
+    egd:line(Im, {X - 4, Y - Ey}, {X + 4, Y - Ey}, Color),
+    egd:line(Im, {X - 4, Y + Ey}, {X + 4, Y + Ey}, Color),
     egd:filledEllipse(Im, {X - 3, Y - 3}, {X + 3, Y + 3}, Color).
+
+draw_graph_line({X1,Y1,_},{X2,Y2,_}, Color, Im) ->
+    egd:line(Im, {X1,Y1}, {X2,Y2}, Color);
+draw_graph_line(Pt1, Pt2, Color, Im) ->
+    egd:line(Im, Pt1, Pt2, Color).
 
 %% name and color information
 
@@ -596,12 +604,15 @@ draw_bar2d_data_bars([{{Color,_Set}, Value}|Bars], Chart, Font, Im, Bx, Bo,CS) -
 %%==========================================================================
 
 
-xy2chart({X,Y}, Chart) ->
-    {{Rx0,Ry0}, {_Rx1,_Ry1}} = Chart#chart.ranges,
-    {{Bx0,By0}, {_Bx1,By1}} = Chart#chart.bbx,
-    {Dx, Dy} = Chart#chart.dxdy,
-    {round(X*Dx + Bx0 - Rx0*Dx), round(By1 - (Y*Dy + By0 - Ry0*Dy - Chart#chart.margin))}. 
-
+xy2chart({X,Y}, #chart{ 
+	ranges = {{Rx0,Ry0}, {_Rx1,_Ry1}}, 
+	bbx    = {{Bx0,By0}, {_Bx1, By1}}, 
+	dxdy   = {Dx, Dy}, 
+	margin = Margin } ) ->
+    {round(X*Dx + Bx0 - Rx0*Dx), round(By1 - (Y*Dy + By0 - Ry0*Dy - Margin))};
+xy2chart({X,Y,Error}, Chart) ->
+    {Xc,Yc} = xy2chart({X,Y}, #chart{ dxdy = {_,Dy} } = Chart),
+    {Xc, Yc, round(Dy*Error)}.
 
 ranges([{_Name, Es}|Data]) when is_list(Es) ->
     Ranges = xy_minmax(Es),
@@ -652,10 +663,12 @@ precision_level(S, E, N) when is_number(S), is_number(E) ->
     end;
 precision_level(_, _, _) -> 2.
 
-% on form [{X,Y}]
+% on form [{X,Y}] | [{X,Y,E}]
 xy_minmax(Elements) ->
-    Xs = [ X || {X,_} <- Elements ],
-    Ys = [ Y || {_,Y} <- Elements ],
+    {Xs, Ys} = lists:foldl(fun
+	    ({X,Y,_}, {Xis, Yis}) -> {[X|Xis],[Y|Yis]};
+	    ({X,Y},   {Xis, Yis}) -> {[X|Xis],[Y|Yis]}
+	end, {[],[]}, Elements),
     {{lists:min(Xs),lists:min(Ys)}, {lists:max(Xs), lists:max(Ys)}}.
 
 xy_resulting_ranges({{X0,Y0},{X1,Y1}},{{X2,Y2},{X3,Y3}}) ->
