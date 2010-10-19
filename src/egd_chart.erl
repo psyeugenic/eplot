@@ -238,20 +238,21 @@ draw_graphs(Datas, Chart, Im) ->
 draw_graphs([],_,_,_) -> ok;
 draw_graphs([{_, Data}|Datas], ColorIndex, Chart, Im) ->
     Color = color_scheme(ColorIndex),
-    draw_graph(Data, Chart, Color, Im),
+    % convert data to graph data
+    % fewer pass of xy2chart
+    GraphData = [xy2chart(Pt, Chart) || Pt <- Data],
+    draw_graph(GraphData, Color, Im),
     draw_graphs(Datas, ColorIndex + 1, Chart, Im).
    
-draw_graph([], _, _,_) -> ok;
-draw_graph([E1,E2|Data], Chart, Color, Im) ->
-    P1 = xy2chart(E1, Chart),
-    P2 = xy2chart(E2, Chart),
-    draw_graph_dot(P1, Color, Im),
-    egd:line(Im, P1,P2, Color),
-    draw_graph([E2|Data], Chart, Color, Im);
-draw_graph([E|Data], Chart, Color, Im) ->
-    Pt = xy2chart(E, Chart),
+draw_graph([], _,_) -> ok;
+draw_graph([Pt1,Pt2|Data], Color, Im) ->
+    draw_graph_dot(Pt1, Color, Im),
+    egd:line(Im, Pt1, Pt2, Color),
+    draw_graph([Pt2|Data], Color, Im);
+
+draw_graph([Pt|Data], Color, Im) ->
     draw_graph_dot(Pt, Color, Im),
-    draw_graph(Data, Chart, Color, Im).
+    draw_graph(Data, Color, Im).
 
 draw_graph_dot({X,Y}, Color, Im) ->
     egd:filledEllipse(Im, {X - 3, Y - 3}, {X + 3, Y + 3}, Color).
