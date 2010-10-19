@@ -42,10 +42,7 @@ parse_data_files([Filename|Filenames], Out) ->
 
 merge_options([], Out) -> Out;
 merge_options([{Key, Value}|Opts], Out) ->
-    case proplists:get_value(Key, Out) of
-	undefined -> merge_options(Opts, [{Key, Value}|Out]);
-	_         -> merge_options(Opts, [{Key, Value}|proplists:delete(Key, Out)])
-    end.
+    merge_options(Opts, [{Key, Value}|proplists:delete(Key, Out)]).
 
 data_speedup([]) -> [];
 data_speedup([{Filename,[{X,Y}|T]}|Data]) -> 
@@ -70,22 +67,24 @@ parse_data_file(Fd, String, Out) ->
 tokens2item(Tokens) ->
     Is = lists:map(fun
 	(String) ->
-	    list_to_term(String)
+	    string_to_term(String)
 	end, Tokens),
     [X,Y|_] = Is,
     {X,Y}.
 
-list_to_term(String) ->
-    case catch list_to_number(String) of
-	{'EXIT', _} -> list_to_atom(String);
-	I -> I
+string_to_term(Value) ->
+    try
+	list_to_integer(Value)
+    catch
+	_:_ ->
+	    try
+		list_to_float(Value)
+	    catch
+		_:_ ->
+		    list_to_atom(Value)
+	    end
     end.
 
-list_to_number(String) ->
-    case catch list_to_integer(String) of
-	I when is_integer(I) -> I;
-	_ -> list_to_float(String)
-    end.
 
 get_config() ->
     Home = os:cmd("echo -n $HOME"),
