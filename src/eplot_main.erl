@@ -65,12 +65,10 @@ parse_data_file(Fd, String, Out) ->
     parse_data_file(Fd, io:get_line(Fd, ""), [Item|Out]).
     
 tokens2item(Tokens) ->
-    Is = lists:map(fun
-	(String) ->
-	    string_to_term(String)
-	end, Tokens),
-    [X,Y|_] = Is,
-    {X,Y}.
+    case lists:map(fun (String) -> string_to_term(String) end, Tokens) of
+	[X,Y] -> {X,Y};
+	[X,Y,E|_] -> {X,Y,E}
+    end.
 
 string_to_term(Value) ->
     try

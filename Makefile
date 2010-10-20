@@ -1,10 +1,11 @@
 include vsn.mk
 
-ERLC = erlc
-ESRC = src
-EBIN = ebin
-BIN  = bin
-LINK = ln -s
+ERLC   = erlc
+ESRC   = src
+EBIN   = ebin
+BIN    = bin
+LINK   = ln -s -f
+EFLAGS = +debug_info
 
 MODULES = \
 	  egd_chart \
