@@ -162,7 +162,7 @@ graph(Data, Options) ->
     draw_xlabel(Chart, Im, Font),
     draw_ylabel(Chart, Im, Font),
 
-    Png = egd:render(Im, Chart#chart.type),
+    Png = egd:render(Im, Chart#chart.type, [{render_engine, Chart#chart.render_engine}]),
     egd:destroy(Im),
     try erlang:exit(Im, normal) catch _:_ -> ok end,
     Png.
@@ -175,11 +175,14 @@ graph_chart(Opts, Data) ->
     Height    = proplists:get_value(height,       Opts, 600),
     Xlabel    = proplists:get_value(x_label,      Opts, "X"),
     Ylabel    = proplists:get_value(y_label,      Opts, "Y"),
+    %% multiple ways to set ranges
     XrangeMax = proplists:get_value(x_range_max,  Opts, X1),
     XrangeMin = proplists:get_value(x_range_min,  Opts, X0),
     YrangeMax = proplists:get_value(y_range_max,  Opts, Y1),
     YrangeMin = proplists:get_value(y_range_min,  Opts, Y0),
-    Ranges    = {{XrangeMin, YrangeMin}, {XrangeMax,YrangeMax}},
+    {Xr0,Xr1} = proplists:get_value(x_range,      Opts, {XrangeMin, XrangeMax}),
+    {Yr0,Yr1} = proplists:get_value(y_range,      Opts, {YrangeMin, YrangeMax}),
+    Ranges    = {{Xr0, Yr0}, {Xr1,Yr1}},
     Precision = precision_level(Ranges, 10),
     {TsX,TsY} = smart_ticksize(Ranges, 10),
     XTicksize = proplists:get_value(x_ticksize,   Opts, TsX),
@@ -187,24 +190,26 @@ graph_chart(Opts, Data) ->
     Ticksize  = proplists:get_value(ticksize,     Opts, {XTicksize, YTicksize}),
     Margin    = proplists:get_value(margin,       Opts, 30),
     BGC       = proplists:get_value(bg_rgba,      Opts, {230,230, 255, 255}),
+    Renderer  = proplists:get_value(render_engine, Opts, opaque),
 
     BBX       = {{Margin, Margin}, {Width - Margin, Height - Margin}},
     DxDy      = update_dxdy(Ranges,BBX),
     
     
     #chart{
-	type      = Type,
-	width     = Width,
-	height    = Height,
-	x_label   = Xlabel,
-	y_label   = Ylabel,
-	ranges    = Ranges,
-	precision = Precision,
-	ticksize  = Ticksize,
-	margin    = Margin,
-	bbx       = BBX,
-	dxdy      = DxDy,
-	bg_rgba   = BGC
+	type          = Type,
+	width         = Width,
+	height        = Height,
+	x_label       = Xlabel,
+	y_label       = Ylabel,
+	ranges        = Ranges,
+	precision     = Precision,
+	ticksize      = Ticksize,
+	margin        = Margin,
+	bbx           = BBX,
+	dxdy          = DxDy,
+	render_engine = Renderer,
+	bg_rgba       = BGC
     }.
 
 draw_ylabel(Chart, Im, Font) ->
@@ -439,6 +444,8 @@ bar2d_convert_data([{Set, KVs}|Data], ColorIndex, {ColorMap, Out}) ->
     bar2d_convert_data(Data, ColorIndex + 1, {[{Set,Color}|ColorMap], bar2d_convert_data_kvs(KVs, Set, Color, Out)}).
 
 bar2d_convert_data_kvs([], _,_, Out) -> Out;
+bar2d_convert_data_kvs([{Key, Value,_} | KVs], Set, Color, Out) ->
+    bar2d_convert_data_kvs([{Key, Value} | KVs], Set, Color, Out);
 bar2d_convert_data_kvs([{Key, Value}|KVs], Set, Color, Out) ->
     case proplists:get_value(Key, Out) of 
 	undefined ->
@@ -459,8 +466,13 @@ bar2d_chart(Opts, Data) ->
     Margin   = proplists:get_value(margin,        Opts, 30),
     Width    = proplists:get_value(width,         Opts, 600),
     Height   = proplists:get_value(height,        Opts, 600),
-    Xrange   = proplists:get_value(y_range,       Opts, 0),
-    Ranges   = proplists:get_value(ranges,        Opts, {{0,0}, {length(Data), lists:max([Xrange|Values])}}),
+    XrangeMax = proplists:get_value(x_range_max,  Opts, length(Data)),
+    XrangeMin = proplists:get_value(x_range_min,  Opts, 0),
+    YrangeMax = proplists:get_value(y_range_max,  Opts, lists:max(Values)),
+    YrangeMin = proplists:get_value(y_range_min,  Opts, 0),
+    {Yr0,Yr1} = proplists:get_value(y_range,      Opts, {YrangeMin, YrangeMax}),
+    {Xr0,Xr1} = proplists:get_value(x_range,      Opts, {XrangeMin, XrangeMax}),
+    Ranges   = proplists:get_value(ranges,        Opts, {{Xr0, Yr0}, {Xr1,Yr1}}),
     Ticksize = proplists:get_value(ticksize,      Opts, smart_ticksize(Ranges, 10)),
     Cw       = proplists:get_value(column_width,  Opts, {ratio, 0.8}),
     Bw       = proplists:get_value(bar_width,     Opts, {ratio, 1.0}),
@@ -680,9 +692,9 @@ xy_resulting_ranges({{X0,Y0},{X1,Y1}},{{X2,Y2},{X3,Y3}}) ->
     }.
 
 update_dxdy({{Rx0, Ry0}, {Rx1, Ry1}}, {{Bx0,By0},{Bx1,By1}}) ->
-   Dx = divide((Bx1 - Bx0),(Rx1 - Rx0)),
-   Dy = divide((By1 - By0),(Ry1 - Ry0)),
-   {Dx,Dy}.
+    Dx = divide((Bx1 - Bx0),(Rx1 - Rx0)),
+    Dy = divide((By1 - By0),(Ry1 - Ry0)),
+    {Dx,Dy}.
 
 divide(_T,N) when abs(N) < ?float_error -> 0.0;
 %divide(T,N) when abs(N) < ?float_error -> exit({bad_divide, {T,N}});
