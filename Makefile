@@ -4,7 +4,7 @@ ERLC   = erlc
 ESRC   = src
 EBIN   = ebin
 BIN    = bin
-LINK   = ln -s
+LINK   = ln -s -f
 EFLAGS = +debug_info
 
 MODULES = \
