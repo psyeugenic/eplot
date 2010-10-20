@@ -1,0 +1,98 @@
+#!/usr/bin/env escript
+%%! -smp enable
+%%  vim: filetype=erlang
+
+main(["rendertest"]) -> rendertest();
+main(["examples"])   -> examples();
+main(_)              -> halt(1).
+
+
+rendertest() ->
+    code:add_patha(ebin()),
+    Functions = [graph, bar2d],
+    Options   = [[
+	{width, Width}, {height, Height}, {margin, Margin}, 
+	{ticksize, Ticksize}, {x_range, Xrange}, {y_range, Yrange},
+	{y_label, Ylabel}, {x_label, Xlabel}, {bg_rgba, Rgba}] ||
+
+	Width    <- [800, 1300],
+	Height   <- [800, 1024],
+	Margin   <- [30, 60],
+	Ticksize <- [{12,12}, {180,180}],
+	Xrange   <- [{0, 100}, {-1000, 1000}],
+	Yrange   <- [{0, 100}, {-1000, 1000}],
+	Ylabel   <- ["Y-label"],
+	Xlabel   <- ["X-label"],
+	Rgba     <- [{255,255,255}]
+    ],
+
+    Ns    = [100, 200, 500],
+
+    Datas = [{"dataset " ++ integer_to_list(N), [{X,random:uniform(N)} || X <-lists:seq(1,N,10)]} || N <- Ns],
+
+    Tests = [{Function, Option} || Function <- Functions, Option <- Options],
+
+    lists:foldl(fun
+	    ({Function, Opts}, I) ->
+		io:format("[~3w] ~p with ~p~n", [I, Function, Opts]),
+		egd_chart:Function(Datas, Opts),
+		I + 1
+	end, 1, Tests),
+    ok.
+
+
+examples() ->
+    code:add_patha(ebin()),
+    Functions = [graph, bar2d],
+    Options   = [[
+	{width, Width}, {height, Height}, {margin, Margin}, {render_engine, opaque},
+	{ticksize, Ticksize}, {x_range, {-300, 300}}, Yranges,
+	{y_label, Ylabel}, {x_label, Xlabel}, {bg_rgba, Rgba}] ||
+
+	Width    <- [1000],
+	Height   <- [800],
+	Margin   <- [45],
+	Ticksize <- [{100,50}],
+	Yranges  <- [{y_range, {0,500}}, {y_range, {-500,500}}],
+	Ylabel   <- ["Y-label"],
+	Xlabel   <- ["X-label"],
+	Rgba     <- [{242,242,249,255}]
+    ],
+
+    Ns    = [
+	{{0,200}, fun(X) ->
+		    500/(X + 1) + X
+		end},
+	{{-200,200}, fun(X) ->
+		    math:sqrt(X*X + 10*X)
+		end},
+	{{-300,300}, fun(X) ->
+		    X*math:sin(X/200*6.28)
+		end}
+	],
+
+    Datas = [
+	[{"dataset " ++ integer_to_list(Ne), [{X, Fu(X)} || X <-lists:seq(Nb,Ne,10)]} || 
+	    {{Nb, Ne}, Fu} <- Ns], 
+	[{"errorset " ++ integer_to_list(Ne), [{X, Fu(X), rand(20)} || X <-lists:seq(Nb,Ne,10)]} ||
+	    {{Nb, Ne}, Fu} <- Ns] 
+     ],
+
+
+    Tests = [{Function, Data, Option} || Function <- Functions, Option <- Options, Data <- Datas],
+
+    lists:foldl(fun
+	    ({Function, Data, Opts}, I) ->
+		io:format("[~3w] ~p with ~p~n", [I, Function, Opts]),
+		Chart = egd_chart:Function(Data, Opts),
+		egd:save(Chart, "example/" ++ atom_to_list(Function) ++ "_" ++ integer_to_list(I) ++ ".png"),
+		I + 1
+	end, 1, Tests),
+    ok.
+
+
+ebin() ->
+    filename:join([filename:dirname(escript:script_name()), "..", "ebin"]).
+
+
+rand(N) -> random:uniform(N).

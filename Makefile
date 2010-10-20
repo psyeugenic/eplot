@@ -49,10 +49,15 @@ install : build $(EXAMPLE)
 	$(INSTALL_DIR)  $(RELEASE_DIR)/bin
 	$(LINK)         $(RELEASE_LIB_DIR)/bin/eplot $(RELEASE_DIR)/bin/eplot
 
+test: build
+	bin/eplot_test rendertest
+
+examples: build
+	bin/eplot_test examples
 
 info: 
 	@echo "$(TARGETS)"
 clean:
 	rm -f $(TARGETS)
 
-.PHONY: install clean info
+.PHONY: install clean info test examples
