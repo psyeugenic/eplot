@@ -1,4 +1,3 @@
-include vsn.mk
 
 ERLC   = erlc
 ESRC   = src
@@ -28,11 +27,16 @@ else
 	RELEASE_DIR = $(DESTDIR)/$(prefix)
 endif
 
+all: build
+
+vsn.mk:
+	@/bin/sh ./VERSION-GEN
+-include vsn.mk
+
 RELEASE_LIB_DIR = $(RELEASE_DIR)/lib/erlang/lib/eplot-$(VSN)
 
-TARGETS = $(MODULES:%=$(EBIN)/%.beam)
+TARGETS = $(MODULES:%=$(EBIN)/%.beam) vsn.mk
 
-all: build
 
 build: Makefile $(TARGETS)
 
@@ -59,5 +63,6 @@ info:
 	@echo "$(TARGETS)"
 clean:
 	rm -f $(TARGETS)
+
 
 .PHONY: install clean info test examples
