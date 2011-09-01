@@ -85,7 +85,7 @@ string_to_term(Value) ->
 
 
 get_config() ->
-    Home = os:cmd("echo -n $HOME"),
+    Home = os:getenv("HOME"),
     Path = filename:join([Home, ".eplot"]),
     File = filename:join([Path, "eplot.config"]),
     case file:consult(File) of
