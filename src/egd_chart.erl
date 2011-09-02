@@ -7,11 +7,6 @@
 	bar2d/2
 	]).
 
--export([
-	hsl2rgb/1, 
-	rgb2hsl/1
-	]).
-
 -export([smart_ticksize/3]).
 
 -record(chart, {
@@ -46,68 +41,6 @@
 
 -define(float_error, 0.0000000000000001).
 
-
-%% color conversions
-%% H, hue has the range of [0, 360]
-%% S, saturation has the range of [0,1]
-%% L, lightness has the range of [0,1]
-
-hsl2rgb({H,S,L}) -> hsl2rgb({H,S,L,255});
-hsl2rgb({H,S,L,A}) ->
-    Q  = if
-	L < 0.5 -> L * (1 + S);
-	true    -> L + S - (L * S)
-    end,
-    P  = 2 * L - Q,
-    Hk = H/360,
-    Rt = Hk + 1/3,
-    Gt = Hk,
-    Bt = Hk - 1/3,
-
-    Cts = lists:map(fun
-	(Tc) when Tc < 0.0 -> Tc + 1.0;
-	(Tc) when Tc > 1.0 -> Tc - 1.0;
-	(Tc) ->  Tc
-    end, [Rt, Gt, Bt]),
-    [R,G,B] = lists:map(fun
-	(Tc) when Tc < 1/6 -> P + ((Q - P) * 6 * Tc);
-	(Tc) when Tc < 1/2, Tc >= 1/6 -> Q;
-	(Tc) when Tc < 2/3, Tc >= 1/2 -> P + ((Q - P) * 6 * (2/3 - Tc));
-	(_ ) -> P
-    end, Cts),
-    {trunc(R*255),trunc(G*255),trunc(B*255),A}.
-
-rgb2hsl({R,G,B}) -> rgb2hsl({R,G,B,255});
-rgb2hsl({R,G,B,A}) ->
-    Rf  = R/255,
-    Gf  = G/255,
-    Bf  = B/255,
-    Max = lists:max([Rf,Gf,Bf]),
-    Min = lists:min([Rf,Gf,Bf]),
-    H   = if
-	    abs(Max - Min) < ?float_error ->
-		0;
-	    abs(Max - Rf)  < ?float_error ->
-		D  = 60 * (Gf - Bf)/(Max - Min),
-		Dt = trunc(D),
-	        Dt rem 360;
-	    abs(Max - Gf) < ?float_error ->
-		60 * (Bf - Rf)/(Max - Min) + 120;
-	    abs(Max - Bf) < ?float_error ->
-		60 * (Rf - Gf)/(Max - Min) + 240;
-	    true -> 
-	    0
-	end,
-    L   = (Max + Min)/2,
-    S   = if
-	    abs(Max - Min) < ?float_error ->
-		0;
-	    L > 0.5 ->
-		(Max - Min)/(2 - (Max + Min));
-	    true ->
-		(Max - Min)/(Max + Min)
-	end,
-    {H, S, L, A}.
 
 %% graph/1 and graph/2
 %% In:
@@ -162,7 +95,7 @@ graph(Data, Options) ->
     draw_xlabel(Chart, Im, Font),
     draw_ylabel(Chart, Im, Font),
 
-    Png = egd:render(Im, Chart#chart.type),
+    Png = egd:render(Im, Chart#chart.type, [{render_engine, Chart#chart.render_engine}]),
     egd:destroy(Im),
     try erlang:exit(Im, normal) catch _:_ -> ok end,
     Png.
@@ -175,11 +108,14 @@ graph_chart(Opts, Data) ->
     Height    = proplists:get_value(height,       Opts, 600),
     Xlabel    = proplists:get_value(x_label,      Opts, "X"),
     Ylabel    = proplists:get_value(y_label,      Opts, "Y"),
+    %% multiple ways to set ranges
     XrangeMax = proplists:get_value(x_range_max,  Opts, X1),
     XrangeMin = proplists:get_value(x_range_min,  Opts, X0),
     YrangeMax = proplists:get_value(y_range_max,  Opts, Y1),
     YrangeMin = proplists:get_value(y_range_min,  Opts, Y0),
-    Ranges    = {{XrangeMin, YrangeMin}, {XrangeMax,YrangeMax}},
+    {Xr0,Xr1} = proplists:get_value(x_range,      Opts, {XrangeMin, XrangeMax}),
+    {Yr0,Yr1} = proplists:get_value(y_range,      Opts, {YrangeMin, YrangeMax}),
+    Ranges    = {{Xr0, Yr0}, {Xr1,Yr1}},
     Precision = precision_level(Ranges, 10),
     {TsX,TsY} = smart_ticksize(Ranges, 10),
     XTicksize = proplists:get_value(x_ticksize,   Opts, TsX),
@@ -187,24 +123,26 @@ graph_chart(Opts, Data) ->
     Ticksize  = proplists:get_value(ticksize,     Opts, {XTicksize, YTicksize}),
     Margin    = proplists:get_value(margin,       Opts, 30),
     BGC       = proplists:get_value(bg_rgba,      Opts, {230,230, 255, 255}),
+    Renderer  = proplists:get_value(render_engine, Opts, opaque),
 
     BBX       = {{Margin, Margin}, {Width - Margin, Height - Margin}},
     DxDy      = update_dxdy(Ranges,BBX),
     
     
     #chart{
-	type      = Type,
-	width     = Width,
-	height    = Height,
-	x_label   = Xlabel,
-	y_label   = Ylabel,
-	ranges    = Ranges,
-	precision = Precision,
-	ticksize  = Ticksize,
-	margin    = Margin,
-	bbx       = BBX,
-	dxdy      = DxDy,
-	bg_rgba   = BGC
+	type          = Type,
+	width         = Width,
+	height        = Height,
+	x_label       = Xlabel,
+	y_label       = Ylabel,
+	ranges        = Ranges,
+	precision     = Precision,
+	ticksize      = Ticksize,
+	margin        = Margin,
+	bbx           = BBX,
+	dxdy          = DxDy,
+	render_engine = Renderer,
+	bg_rgba       = BGC
     }.
 
 draw_ylabel(Chart, Im, Font) ->
@@ -227,15 +165,11 @@ draw_xlabel(Chart, Im, Font) ->
     Pt = {Xc - trunc(Width/2), Y},
     egd:text(Im, Pt, Font, Label, egd:color({0,0,0})).
 
-
-color_scheme(I) ->
-    egd:color(hsl2rgb({I*55 rem 360, 0.8, 0.3, 120})).
-
 draw_graphs(Datas, Chart, Im) ->
     draw_graphs(Datas, 0, Chart, Im).
 draw_graphs([],_,_,_) -> ok;
 draw_graphs([{_, Data}|Datas], ColorIndex, Chart, Im) ->
-    Color = color_scheme(ColorIndex),
+    Color = egd_colorscheme:select(default, ColorIndex),
     % convert data to graph data
     % fewer pass of xy2chart
     GraphData = [xy2chart(Pt, Chart) || Pt <- Data],
@@ -272,7 +206,7 @@ draw_graph_names(Datas, Chart, Font, Im) ->
     draw_graph_names(Datas, 0, Chart, Font, Im, 0, Chart#chart.graph_name_yh).
 draw_graph_names([],_,_,_,_,_,_) -> ok;
 draw_graph_names([{Name, _}|Datas], ColorIndex, Chart, Font, Im, Yo, Yh) ->
-    Color = color_scheme(ColorIndex),
+    Color = egd_colorscheme:select(default, ColorIndex),
     draw_graph_name_color(Chart, Im, Font, Name, Color, Yo),
     draw_graph_names(Datas, ColorIndex + 1, Chart, Font, Im, Yo + Yh, Yh).
 
@@ -435,10 +369,12 @@ bar2d(Data0, Options) ->
 bar2d_convert_data(Data) -> bar2d_convert_data(Data, 0,{[], []}).
 bar2d_convert_data([], _, {ColorMap, Out}) -> {lists:reverse(ColorMap), lists:sort(Out)};
 bar2d_convert_data([{Set, KVs}|Data], ColorIndex, {ColorMap, Out}) ->
-    Color = color_scheme(ColorIndex),
+    Color = egd_colorscheme:select(default, ColorIndex),
     bar2d_convert_data(Data, ColorIndex + 1, {[{Set,Color}|ColorMap], bar2d_convert_data_kvs(KVs, Set, Color, Out)}).
 
 bar2d_convert_data_kvs([], _,_, Out) -> Out;
+bar2d_convert_data_kvs([{Key, Value,_} | KVs], Set, Color, Out) ->
+    bar2d_convert_data_kvs([{Key, Value} | KVs], Set, Color, Out);
 bar2d_convert_data_kvs([{Key, Value}|KVs], Set, Color, Out) ->
     case proplists:get_value(Key, Out) of 
 	undefined ->
@@ -459,8 +395,13 @@ bar2d_chart(Opts, Data) ->
     Margin   = proplists:get_value(margin,        Opts, 30),
     Width    = proplists:get_value(width,         Opts, 600),
     Height   = proplists:get_value(height,        Opts, 600),
-    Xrange   = proplists:get_value(y_range,       Opts, 0),
-    Ranges   = proplists:get_value(ranges,        Opts, {{0,0}, {length(Data), lists:max([Xrange|Values])}}),
+    XrangeMax = proplists:get_value(x_range_max,  Opts, length(Data)),
+    XrangeMin = proplists:get_value(x_range_min,  Opts, 0),
+    YrangeMax = proplists:get_value(y_range_max,  Opts, lists:max(Values)),
+    YrangeMin = proplists:get_value(y_range_min,  Opts, 0),
+    {Yr0,Yr1} = proplists:get_value(y_range,      Opts, {YrangeMin, YrangeMax}),
+    {Xr0,Xr1} = proplists:get_value(x_range,      Opts, {XrangeMin, XrangeMax}),
+    Ranges   = proplists:get_value(ranges,        Opts, {{Xr0, Yr0}, {Xr1,Yr1}}),
     Ticksize = proplists:get_value(ticksize,      Opts, smart_ticksize(Ranges, 10)),
     Cw       = proplists:get_value(column_width,  Opts, {ratio, 0.8}),
     Bw       = proplists:get_value(bar_width,     Opts, {ratio, 1.0}),
@@ -680,9 +621,9 @@ xy_resulting_ranges({{X0,Y0},{X1,Y1}},{{X2,Y2},{X3,Y3}}) ->
     }.
 
 update_dxdy({{Rx0, Ry0}, {Rx1, Ry1}}, {{Bx0,By0},{Bx1,By1}}) ->
-   Dx = divide((Bx1 - Bx0),(Rx1 - Rx0)),
-   Dy = divide((By1 - By0),(Ry1 - Ry0)),
-   {Dx,Dy}.
+    Dx = divide((Bx1 - Bx0),(Rx1 - Rx0)),
+    Dy = divide((By1 - By0),(Ry1 - Ry0)),
+    {Dx,Dy}.
 
 divide(_T,N) when abs(N) < ?float_error -> 0.0;
 %divide(T,N) when abs(N) < ?float_error -> exit({bad_divide, {T,N}});

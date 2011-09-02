@@ -1,4 +1,3 @@
-include vsn.mk
 
 ERLC   = erlc
 ESRC   = src
@@ -8,6 +7,7 @@ LINK   = ln -s -f
 EFLAGS = +debug_info
 
 MODULES = \
+	  egd_colorscheme \
 	  egd_chart \
 	  eplot_main \
 	  eview
@@ -28,11 +28,16 @@ else
 	RELEASE_DIR = $(DESTDIR)/$(prefix)
 endif
 
+all: build
+
+vsn.mk:
+	@/bin/sh ./VERSION-GEN
+-include vsn.mk
+
 RELEASE_LIB_DIR = $(RELEASE_DIR)/lib/erlang/lib/eplot-$(VSN)
 
-TARGETS = $(MODULES:%=$(EBIN)/%.beam)
+TARGETS = $(MODULES:%=$(EBIN)/%.beam) vsn.mk
 
-all: build
 
 build: Makefile $(TARGETS)
 
@@ -49,10 +54,16 @@ install : build $(EXAMPLE)
 	$(INSTALL_DIR)  $(RELEASE_DIR)/bin
 	$(LINK)         $(RELEASE_LIB_DIR)/bin/eplot $(RELEASE_DIR)/bin/eplot
 
+test: build
+	bin/eplot_test rendertest
+
+examples: build
+	bin/eplot_test examples
 
 info: 
 	@echo "$(TARGETS)"
 clean:
 	rm -f $(TARGETS)
 
-.PHONY: install clean info
+
+.PHONY: install clean info test examples
