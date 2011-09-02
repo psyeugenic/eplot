@@ -7,11 +7,6 @@
 	bar2d/2
 	]).
 
--export([
-	hsl2rgb/1, 
-	rgb2hsl/1
-	]).
-
 -export([smart_ticksize/3]).
 
 -record(chart, {
@@ -46,68 +41,6 @@
 
 -define(float_error, 0.0000000000000001).
 
-
-%% color conversions
-%% H, hue has the range of [0, 360]
-%% S, saturation has the range of [0,1]
-%% L, lightness has the range of [0,1]
-
-hsl2rgb({H,S,L}) -> hsl2rgb({H,S,L,255});
-hsl2rgb({H,S,L,A}) ->
-    Q  = if
-	L < 0.5 -> L * (1 + S);
-	true    -> L + S - (L * S)
-    end,
-    P  = 2 * L - Q,
-    Hk = H/360,
-    Rt = Hk + 1/3,
-    Gt = Hk,
-    Bt = Hk - 1/3,
-
-    Cts = lists:map(fun
-	(Tc) when Tc < 0.0 -> Tc + 1.0;
-	(Tc) when Tc > 1.0 -> Tc - 1.0;
-	(Tc) ->  Tc
-    end, [Rt, Gt, Bt]),
-    [R,G,B] = lists:map(fun
-	(Tc) when Tc < 1/6 -> P + ((Q - P) * 6 * Tc);
-	(Tc) when Tc < 1/2, Tc >= 1/6 -> Q;
-	(Tc) when Tc < 2/3, Tc >= 1/2 -> P + ((Q - P) * 6 * (2/3 - Tc));
-	(_ ) -> P
-    end, Cts),
-    {trunc(R*255),trunc(G*255),trunc(B*255),A}.
-
-rgb2hsl({R,G,B}) -> rgb2hsl({R,G,B,255});
-rgb2hsl({R,G,B,A}) ->
-    Rf  = R/255,
-    Gf  = G/255,
-    Bf  = B/255,
-    Max = lists:max([Rf,Gf,Bf]),
-    Min = lists:min([Rf,Gf,Bf]),
-    H   = if
-	    abs(Max - Min) < ?float_error ->
-		0;
-	    abs(Max - Rf)  < ?float_error ->
-		D  = 60 * (Gf - Bf)/(Max - Min),
-		Dt = trunc(D),
-	        Dt rem 360;
-	    abs(Max - Gf) < ?float_error ->
-		60 * (Bf - Rf)/(Max - Min) + 120;
-	    abs(Max - Bf) < ?float_error ->
-		60 * (Rf - Gf)/(Max - Min) + 240;
-	    true -> 
-	    0
-	end,
-    L   = (Max + Min)/2,
-    S   = if
-	    abs(Max - Min) < ?float_error ->
-		0;
-	    L > 0.5 ->
-		(Max - Min)/(2 - (Max + Min));
-	    true ->
-		(Max - Min)/(Max + Min)
-	end,
-    {H, S, L, A}.
 
 %% graph/1 and graph/2
 %% In:
@@ -232,15 +165,11 @@ draw_xlabel(Chart, Im, Font) ->
     Pt = {Xc - trunc(Width/2), Y},
     egd:text(Im, Pt, Font, Label, egd:color({0,0,0})).
 
-
-color_scheme(I) ->
-    egd:color(hsl2rgb({I*55 rem 360, 0.8, 0.3, 120})).
-
 draw_graphs(Datas, Chart, Im) ->
     draw_graphs(Datas, 0, Chart, Im).
 draw_graphs([],_,_,_) -> ok;
 draw_graphs([{_, Data}|Datas], ColorIndex, Chart, Im) ->
-    Color = color_scheme(ColorIndex),
+    Color = egd_colorscheme:select(default, ColorIndex),
     % convert data to graph data
     % fewer pass of xy2chart
     GraphData = [xy2chart(Pt, Chart) || Pt <- Data],
@@ -277,7 +206,7 @@ draw_graph_names(Datas, Chart, Font, Im) ->
     draw_graph_names(Datas, 0, Chart, Font, Im, 0, Chart#chart.graph_name_yh).
 draw_graph_names([],_,_,_,_,_,_) -> ok;
 draw_graph_names([{Name, _}|Datas], ColorIndex, Chart, Font, Im, Yo, Yh) ->
-    Color = color_scheme(ColorIndex),
+    Color = egd_colorscheme:select(default, ColorIndex),
     draw_graph_name_color(Chart, Im, Font, Name, Color, Yo),
     draw_graph_names(Datas, ColorIndex + 1, Chart, Font, Im, Yo + Yh, Yh).
 
@@ -440,7 +369,7 @@ bar2d(Data0, Options) ->
 bar2d_convert_data(Data) -> bar2d_convert_data(Data, 0,{[], []}).
 bar2d_convert_data([], _, {ColorMap, Out}) -> {lists:reverse(ColorMap), lists:sort(Out)};
 bar2d_convert_data([{Set, KVs}|Data], ColorIndex, {ColorMap, Out}) ->
-    Color = color_scheme(ColorIndex),
+    Color = egd_colorscheme:select(default, ColorIndex),
     bar2d_convert_data(Data, ColorIndex + 1, {[{Set,Color}|ColorMap], bar2d_convert_data_kvs(KVs, Set, Color, Out)}).
 
 bar2d_convert_data_kvs([], _,_, Out) -> Out;

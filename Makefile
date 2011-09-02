@@ -7,6 +7,7 @@ LINK   = ln -s -f
 EFLAGS = +debug_info
 
 MODULES = \
+	  egd_colorscheme \
 	  egd_chart \
 	  eplot_main \
 	  eview
