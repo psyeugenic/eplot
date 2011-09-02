@@ -20,10 +20,15 @@ test(File) ->
 		egd:filledRectangle(Im, {(I - 1)*20, 0}, {(I - 1)*20 + 19, 20}, egd_colorscheme:select(default, I))
 	end, lists:seq(1,40)),
     B = egd:render(Im),
-    egd:save(B, "test.png").
+    egd:save(B, File),
+    egd:destroy(Im),
+    ok.
 
+% L - low dark, high bright
+% S
 
-select(_Default, I) -> select(I, 31, 0.8, 0.5, 210).
+select(core1, I) -> select(I, 17, 0.3, 0.3, 200);
+select(_Default, I) -> select(I + 6, 31, 0.8, 0.4, 210).
 select(I, Hm, S, L, A) -> egd:color(hsl2rgb({I*Hm rem 360, S, L, A})).
 
 %% color conversions
