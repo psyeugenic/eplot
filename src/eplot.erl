@@ -1,6 +1,15 @@
-#!/usr/bin/env escript
-%%! -smp enable
-%%  vim: filetype=erlang
+%%
+%% Copyright (C) 2012 Hapida AB
+%%
+%% File:    eplot.erl
+%% Author:  Björn-Egil Dahlberg
+%% Created: 2012-11-22
+%%
+
+-module(eplot).
+
+-export([main/1]).
+-mode(compile).
 
 usage() ->
     Text = 
