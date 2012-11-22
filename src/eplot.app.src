@@ -1,0 +1,19 @@
+{application, eplot, [
+	{description, "A plot engine and drawer"},
+	{vsn, git},
+	{modules, [
+		egd_colorscheme,
+		egd_chart,
+		eplot_main,
+		eview
+	    ]},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib,
+		percept,
+		wx
+	    ]}
+    ]}.
+
+%% vim: ft=erlang
