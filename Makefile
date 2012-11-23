@@ -1,10 +1,11 @@
 ERL  ?= erl
 APP  := eplot
-LINK := ln -s -f
 
-.PHONY: deps test
+.PHONY: deps test install
 
-all: build
+all: escript
+	
+escript: build
 	@./rebar escriptize
 
 build: deps
@@ -25,29 +26,29 @@ docs:
 test:
 	@bin/eplot_test rendertest
 
-#INSTALL      = /usr/bin/install -c
-#INSTALL_DIR  = /usr/bin/install -c -d
-#INSTALL_DATA = /usr/bin/install -m 644
-#prefix       = /usr/local
-#
-#ifeq ($(DESTDIR),)
-#	RELEASE_DIR = $(prefix)
-#else
-#	RELEASE_DIR = $(DESTDIR)/$(prefix)
-#endif
-#
-#
+INSTALL      = /usr/bin/install -c
+INSTALL_DIR  = /usr/bin/install -c -d
+INSTALL_DATA = /usr/bin/install -m 644
+prefix       = /usr/local
+
+ifeq ($(DESTDIR),)
+	RELEASE_DIR = $(prefix)
+else
+	RELEASE_DIR = $(DESTDIR)/$(prefix)
+endif
+
+install: install_escript
+
+install_escript: escript
+	$(INSTALL_DIR)  $(RELEASE_DIR)/bin
+	$(INSTALL)      bin/eplot $(RELEASE_DIR)/bin
+
 #RELEASE_LIB_DIR = $(RELEASE_DIR)/lib/erlang/lib/eplot-$(VSN)
+#TARGETS = $(shell echo ebin/*.beam)
 #
-#TARGETS = $(MODULES:%=$(EBIN)/%.beam) vsn.mk
-#
-#
-#install : build $(EXAMPLE)
+#install_app: escript
 #	$(INSTALL_DIR)  $(RELEASE_LIB_DIR)/ebin
 #	$(INSTALL)      $(TARGETS) $(RELEASE_LIB_DIR)/ebin
-#	$(INSTALL_DIR)  $(RELEASE_LIB_DIR)/example
-#	$(INSTALL_DATA) $(DATAFILES) $(RELEASE_LIB_DIR)/example
 #	$(INSTALL_DIR)  $(RELEASE_LIB_DIR)/bin
 #	$(INSTALL)      bin/eplot $(RELEASE_LIB_DIR)/bin
-#	$(INSTALL_DIR)  $(RELEASE_DIR)/bin
-#	$(LINK)         $(RELEASE_LIB_DIR)/bin/eplot $(RELEASE_DIR)/bin/eplot
+
