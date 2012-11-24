@@ -20,11 +20,11 @@ clean:
 distclean: clean
 	@./rebar delete-deps
 
+test:
+	@./rebar ct
+
 docs:
 	@erl -noshell -run edoc_run application '$(APP)' '"."' '[]'
-
-test:
-	@bin/eplot_test rendertest
 
 INSTALL      = /usr/bin/install -c
 INSTALL_DIR  = /usr/bin/install -c -d
