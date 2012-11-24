@@ -1,0 +1,4 @@
+ebin/
+logs/
+test/*.beam
+bin/eplot
