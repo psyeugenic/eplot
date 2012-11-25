@@ -7,22 +7,10 @@
 -module(egd_colorscheme).
 
 -export([
-	test/1,
 	hsl2rgb/1, 
 	rgb2hsl/1,
 	select/2
     ]).
-
-test(File) ->
-    Im = egd:create(800,600),
-    lists:foreach(fun
-	    (I) ->
-		egd:filledRectangle(Im, {(I - 1)*20, 0}, {(I - 1)*20 + 19, 20}, egd_colorscheme:select(default, I))
-	end, lists:seq(1,40)),
-    B = egd:render(Im),
-    egd:save(B, File),
-    egd:destroy(Im),
-    ok.
 
 % L - low dark, high bright
 % S
