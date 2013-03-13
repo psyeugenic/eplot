@@ -50,13 +50,15 @@ graph_binary(plot2d,Data, Options) ->
     egd_chart:graph(Data, Options);
 graph_binary(bar2d, Data, Options) ->
     egd_chart:bar2d(Data, Options);
-graph_binary(Type, _, _) -> io:format("Bad engine: ~p~n", [Type]), exit(unnormal).
+graph_binary(Type, _, _) ->
+    io:format("Bad engine: ~p~n", [Type]),
+    exit(bad_plot_engine).
 
-parse_data_files(Filenames) -> parse_data_files(Filenames, []).
-parse_data_files([], Out) -> lists:reverse(Out);
-parse_data_files([Filename|Filenames], Out) ->
+parse_data_files([]) -> [];
+parse_data_files([Filename|Filenames]) ->
     Data = parse_data_file(Filename),
-    parse_data_files(Filenames, [{Filename, Data}|Out]).
+    Name = filename:basename(Filename),
+    [{Name, Data}|parse_data_files(Filenames)].
 
 
 merge_options([], Out) -> Out;
