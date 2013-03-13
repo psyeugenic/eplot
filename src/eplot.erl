@@ -19,6 +19,7 @@ usage() ->
 	"\t-render_engine Engine :: alpha | opaque, type of render engine\r\n"
 	"\t-type Type            :: png | raw_bitmap, output type\r\n"
 	"\t-plot Plot            :: plot2d | bar2d, plot type\r\n"
+	"\t-norm File            :: filename(), normalize against\r\n"
 	"\t-width Width          :: integer(), Width\r\n"
 	"\t-height Height        :: integer(), Height\r\n"
 	"\t-x_label Label        :: string(), X-axis label\r\n"

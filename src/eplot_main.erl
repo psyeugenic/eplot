@@ -3,22 +3,14 @@
 
 png(Inputs, Output, Options0) ->
     Options = merge_options(Options0, get_config()),
-    Data0   = parse_data_files(Inputs),
-    Data    = case proplists:is_defined(speedup, Options) of
-	true  -> data_speedup(Data0);
-	false -> Data0
-    end,
+    Data    = process_data(parse_data_files(Inputs), Options),
     B       = graph_binary(proplists:get_value(plot, Options), Data, Options),
     egd:save(B, Output),
     ok.
 
 eview(Inputs, Options0) ->
     Options = proplists:delete(type, merge_options(Options0, get_config())),
-    Data0   = parse_data_files(Inputs),
-    Data    = case proplists:is_defined(speedup, Options) of
-	true  -> data_speedup(Data0);
-	false -> Data0
-    end,
+    Data    = process_data(parse_data_files(Inputs), Options),
     W       = proplists:get_value(width, Options),
     H       = proplists:get_value(height, Options),
     P       = eview:start({W,H}),
@@ -26,6 +18,33 @@ eview(Inputs, Options0) ->
     P ! {self(), bmp_image, B, {W,H}},
     receive {P, done} -> ok end.
 
+process_data(Data0, Options) ->
+    Data1 = case proplists:is_defined(speedup, Options) of
+	true  -> data_speedup(Data0);
+	false -> Data0
+    end,
+    case proplists:is_defined(norm, Options) of
+	true -> 
+	    [{_Name,Norm}] = parse_data_files([proplists:get_value(norm, Options)]),
+	    normalize_data(Data1, Norm);
+	false ->
+	    Data1
+    end.
+
+normalize_data([], _) -> [];
+normalize_data([{Name,Data}|Datas], Norm) ->
+    [{Name, normalize_data_entries(Name, Data, Norm)}|normalize_data(Datas, Norm)].
+normalize_data_entries(_, [], _) -> [];
+normalize_data_entries(Name, [{X,Y}|Entries], Norm) ->
+    case proplists:get_value(X, Norm) of
+	undefined ->
+	    io:format(standard_error, "Warning: entry ~p not in data file ~p\r\n", [X, Name]),
+	    normalize_data_entries(Name, Entries, Norm);
+	Value ->
+	    [{X, Y/Value}|normalize_data_entries(Name, Entries, Norm)]
+    end.
+
+ 
 
 graph_binary(plot2d,Data, Options) ->
     egd_chart:graph(Data, Options);
