@@ -1,54 +1,45 @@
-ERL  ?= erl
-APP  := eplot
+REBAR3_URL=https://s3.amazonaws.com/rebar3/rebar3
 
-.PHONY: deps test install
-
-all: escript
-	
-escript: build
-	@./rebar escriptize
-
-build: deps
-	@./rebar compile
-
-deps: Makefile
-	@./rebar get-deps
-
-clean:
-	@./rebar clean
-
-distclean: clean
-	@./rebar delete-deps
-
-test:
-	@./rebar ct
-
-docs:
-	@erl -noshell -run edoc_run application '$(APP)' '"."' '[]'
-
-INSTALL      = /usr/bin/install -c
-INSTALL_DIR  = /usr/bin/install -c -d
-INSTALL_DATA = /usr/bin/install -m 644
-prefix       = /usr/local
-
-ifeq ($(DESTDIR),)
-	RELEASE_DIR = $(prefix)
-else
-	RELEASE_DIR = $(DESTDIR)/$(prefix)
+ifeq ($(wildcard rebar3),rebar3)
+REBAR3 = $(CURDIR)/rebar3
 endif
 
-install: install_escript
+REBAR3 ?= $(shell test -e `which rebar3` 2>/dev/null && which rebar3 || echo "./rebar3")
 
-install_escript: escript
-	$(INSTALL_DIR)  $(RELEASE_DIR)/bin
-	$(INSTALL)      bin/eplot $(RELEASE_DIR)/bin
+ifeq ($(REBAR3),)
+REBAR3 = $(CURDIR)/rebar3
+endif
 
-#RELEASE_LIB_DIR = $(RELEASE_DIR)/lib/erlang/lib/eplot-$(VSN)
-#TARGETS = $(shell echo ebin/*.beam)
-#
-#install_app: escript
-#	$(INSTALL_DIR)  $(RELEASE_LIB_DIR)/ebin
-#	$(INSTALL)      $(TARGETS) $(RELEASE_LIB_DIR)/ebin
-#	$(INSTALL_DIR)  $(RELEASE_LIB_DIR)/bin
-#	$(INSTALL)      bin/eplot $(RELEASE_LIB_DIR)/bin
+.PHONY: deps escpritize test build
 
+all: build escriptize docs
+
+build: $(REBAR3)
+	@$(REBAR3) compile
+
+$(REBAR3):
+	wget $(REBAR3_URL) || curl -Lo rebar3 $(REBAR3_URL)
+	chmod a+x rebar3
+
+escriptize:
+	@$(REBAR3) escriptize
+
+deps:
+	@$(REBAR3) get-deps
+
+clean:
+	@$(REBAR3) clean
+
+distclean: clean
+	@$(REBAR3) delete-deps
+
+docs:
+	@$(REBAR3) edoc
+
+
+test: 
+	@$(REBAR3) do ct, cover
+
+
+release: test
+	@$(REBAR3) release

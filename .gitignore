@@ -1,4 +1,5 @@
+_build/
 ebin/
-logs/
-test/*.beam
-bin/eplot
+doc/
+rebar3
+rebar.lock
