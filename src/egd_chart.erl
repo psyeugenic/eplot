@@ -331,7 +331,8 @@ draw_perf_xbar(Im, Chart, Xi) ->
 
 %% bar2d/1 and bar2d/2
 %% In:
-%%	Data :: [{ Datasetname :: string(), [{Keyname :: atom() | string(), number() :: Value}]}]
+%%	Data :: [{Datasetname :: string(), [{Keyname :: atom() | string(),
+%%	                                     Value :: number()}]}]
 %%		Datasetname = Name of this dataset (the color name)
 %%		Keyname = The name of each grouping
 %%	Options :: [{Key, Value}]
