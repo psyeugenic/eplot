@@ -17,30 +17,32 @@
 
 -export([smart_ticksize/3]).
 
+-type rgba() :: {byte(), byte(), byte(), byte()}.
+
 -record(chart, {
 	type = png,
 	render_engine = opaque,
-	margin = 30,			% margin
-	bbx = {{30,30}, {130,130}},	% Graph boundingbox (internal)
+	margin = 30 :: non_neg_integer(),  % margin
+	bbx = {{30,30}, {130,130}},	   % Graph boundingbox (internal)
 	ibbx = undefined,
-	ranges = {{0,0}, {100,100}},    % Data boundingbox
-	width = 160,			% Total chart width
-	height = 160,			% Total chart height
+	ranges = {{0,0}, {100,100}},       % Data boundingbox
+	width = 160 :: non_neg_integer(),  % Total chart width
+	height = 160 :: non_neg_integer(), % Total chart height
 	dxdy = {1.0,1.0},
 	ticksize = {10,10},
 	precision = {2,2},
 
 	% colors
-	bg_rgba     = {230, 230, 255, 255},
-	margin_rgba = {255, 255, 255, 255},
+	bg_rgba     = {230, 230, 255, 255} :: rgba(),
+	margin_rgba = {255, 255, 255, 255} :: rgba(),
 	graph_rgba  = [],		% ordered color convention
 
 	% graph specific
-	x_label = "X",
-	y_label = "Y",
-	graph_name_yo = 10,		% Name offset from top
-	graph_name_yh = 10,		% Name drop offset
-	graph_name_xo = 10,		% Name offset from RHS
+	x_label = "X" :: string() | atom(),
+	y_label = "Y" :: string() | atom(),
+	graph_name_yo = 10 :: integer(), % Name offset from top
+	graph_name_yh = 10 :: integer(), % Name drop offset
+	graph_name_xo = 10 :: integer(), % Name offset from RHS
 
 	% bar2d specific
 	bar_width = 40,
@@ -109,7 +111,6 @@ graph(Data, Options) ->
     Png.
 
 graph_chart(Opts, Data) ->
-
     {{X0,Y0},{X1,Y1}} = proplists:get_value(ranges, Opts, ranges(Data)),
     Type      = proplists:get_value(type,         Opts, png),
     Width     = proplists:get_value(width,        Opts, 600),
@@ -135,23 +136,20 @@ graph_chart(Opts, Data) ->
 
     BBX       = {{Margin, Margin}, {Width - Margin, Height - Margin}},
     DxDy      = update_dxdy(Ranges,BBX),
-    
-    
-    #chart{
-	type          = Type,
-	width         = Width,
-	height        = Height,
-	x_label       = Xlabel,
-	y_label       = Ylabel,
-	ranges        = Ranges,
-	precision     = Precision,
-	ticksize      = Ticksize,
-	margin        = Margin,
-	bbx           = BBX,
-	dxdy          = DxDy,
-	render_engine = Renderer,
-	bg_rgba       = BGC
-    }.
+
+    #chart{type          = Type,
+           width         = Width,
+           height        = Height,
+           x_label       = Xlabel,
+           y_label       = Ylabel,
+           ranges        = Ranges,
+           precision     = Precision,
+           ticksize      = Ticksize,
+           margin        = Margin,
+           bbx           = BBX,
+           dxdy          = DxDy,
+           render_engine = Renderer,
+           bg_rgba       = BGC}.
 
 draw_ylabel(Chart, Im, Font) ->
     Label = string(Chart#chart.y_label, 2),
@@ -257,13 +255,13 @@ draw_ticks(Chart, Im, Font) ->
     {Xts, Yts} = Chart#chart.ticksize,
     {{Xmin,Ymin}, {Xmax,Ymax}} = Chart#chart.ranges,
     Ys = case Ymin of 
-	Ymin when Ymin < 0 -> trunc(Ymin/Yts) * Yts;
-	_ -> (trunc(Ymin/Yts) + 1) * Yts
-    end,
+             Ymin when Ymin < 0 -> trunc(Ymin/Yts) * Yts;
+             _ -> (trunc(Ymin/Yts) + 1) * Yts
+         end,
     Xs = case Xmin of
-	Xmin when Xmin < 0 -> trunc(Xmin/Xts) * Xts;
-	_ -> (trunc(Xmin/Xts) + 1) * Xts
-    end,
+             Xmin when Xmin < 0 -> trunc(Xmin/Xts) * Xts;
+             _ -> (trunc(Xmin/Xts) + 1) * Xts
+         end,
     draw_yticks_lp(Im, Chart, Ys, Yts, Ymax, Font),
     draw_xticks_lp(Im, Chart, Xs, Xts, Xmax, Font).
 
@@ -287,7 +285,6 @@ draw_xticks_lp(Im, Chart, Xi, Xts, Xmax, Font) when Xi < Xmax ->
     draw_xticks_lp(Im, Chart, Xi + Xts, Xts, Xmax, Font);
 draw_xticks_lp(_,_,_,_,_,_) -> ok.
 
-
 tick_text(Im, Font, Tick, {X,Y}, Precision, Orientation) ->
     String = string(Tick, Precision),
     L = length(String),
@@ -297,8 +294,7 @@ tick_text(Im, Font, Tick, {X,Y}, Precision, Orientation) ->
 	above -> {-round(PxL/2), -Yl - 3};
 	below -> {-round(PxL/2), 3};
 	left  -> {round(-PxL - 4),-round(Yl/2) - 1};
-	right -> {3, -round(Yl/2)};
-	_ -> throw(tick_text_error)
+	right -> {3, -round(Yl/2)}
     end,
     egd:text(Im, {X + Xo,Y + Yo}, Font, String, egd:color({0,0,0})).
 
@@ -310,10 +306,9 @@ draw_perf_ybar(Im, Chart, Yi) ->
     {{X0,_},{X1,_}} = Chart#chart.bbx,
     [Xl,Xr] = lists:sort([X0,X1]),
     Color = egd:color({180,180,190}),
-    lists:foreach(
-	fun(X) ->
-    	    egd:filledRectangle(Im, {X,Yi}, {X+Pw, Yi}, Color)
-	end, lists:seq(Xl,Xr,Lw)),
+    foreach_seq(fun(X) ->
+                        egd:filledRectangle(Im, {X,Yi}, {X+Pw, Yi}, Color)
+                end, Xl,Xr,Lw),
     ok.
 
 draw_perf_xbar(Im, Chart, Xi) ->
@@ -322,10 +317,9 @@ draw_perf_xbar(Im, Chart, Xi) ->
     {{_,Y0},{_,Y1}} = Chart#chart.bbx,
     [Yu,Yl] = lists:sort([Y0,Y1]),
     Color = egd:color({130,130,130}),
-    lists:foreach(
-	fun(Y) ->
-    	    egd:filledRectangle(Im, {Xi,Y}, {Xi, Y+Pw}, Color)
-	end, lists:seq(Yu,Yl,Lw)),
+    foreach_seq(fun(Y) ->
+                        egd:filledRectangle(Im, {Xi,Y}, {Xi, Y+Pw}, Color)
+                end, Yu,Yl,Lw),
     ok.
 
 
@@ -425,22 +419,20 @@ bar2d_chart(Opts, Data) ->
     BBX      = {{Margin, Margin}, {Width - Margin - InfoW - 10, Height - Margin}},
     DxDy     = update_dxdy(Ranges, BBX),
 
-    #chart{
-	type            = Type,
-	margin	 	= Margin,
-	width	 	= Width,
-	height	 	= Height,
-	ranges   	= Ranges,
-	ticksize 	= Ticksize,
-	bbx	 	= BBX,
-	ibbx            = IBBX,
-	dxdy 	 	= DxDy,
-	column_width 	= Cw,
-	bar_width 	= Bw,
-	margin_rgba     = MGC,
-	bg_rgba         = BGC,
-	render_engine   = Renderer
-    }.
+    #chart{type          = Type,
+           margin        = Margin,
+           width         = Width,
+           height        = Height,
+           ranges        = Ranges,
+           ticksize      = Ticksize,
+           bbx           = BBX,
+           ibbx          = IBBX,
+           dxdy          = DxDy,
+           column_width  = Cw,
+           bar_width     = Bw,
+           margin_rgba   = MGC,
+           bg_rgba       = BGC,
+           render_engine = Renderer}.
 
 draw_bar2d_set_colormap(Im, Chart, Font, ColorMap) ->
     Margin = Chart#chart.margin,
@@ -478,10 +470,9 @@ draw_bar2d_ybar(Im, Chart, Yi) ->
     {{X0,_},{X1,_}} = Chart#chart.bbx,
     [Xl,Xr] = lists:sort([X0,X1]),
     Color = egd:color({180,180,190}),
-    lists:foreach(
-	fun(X) ->
-    	    egd:filledRectangle(Im, {X-Pw,Yi}, {X, Yi}, Color)
-	end, lists:seq(Xl+Pw,Xr,Lw)),
+    foreach_seq(fun(X) ->
+                        egd:filledRectangle(Im, {X-Pw,Yi}, {X, Yi}, Color)
+                end,Xl+Pw,Xr,Lw),
     ok.
 
 draw_bar2d_data(Columns, Chart, Font, Im) ->
@@ -669,5 +660,20 @@ float_to_maybe_integer_to_string(F, P) ->
 	    s(Format, [F])
     end.
 
-s(Format, Terms) -> lists:flatten(io_lib:format(Format, Terms)).
+s(Format, Terms) ->
+    lists:flatten(io_lib:format(Format, Terms)).
 
+foreach_seq(Fun, First, Last, Inc) ->
+    if
+        Inc > 0, First - Inc =< Last;
+        Inc < 0, First - Inc >= Last ->
+            N = (Last - First + Inc) div Inc,
+            foreach_seq_loop(N, First, Inc, Fun);
+        First =:= Last ->
+            foreach_seq_loop(1, First, Inc, Fun)
+    end.
+
+foreach_seq_loop(0, _, _, _) -> ok;
+foreach_seq_loop(N, I, Inc, Fun) ->
+    _ = Fun(I),
+    foreach_seq_loop(N-1, I+Inc, Inc, Fun).
