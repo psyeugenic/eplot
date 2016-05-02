@@ -7,46 +7,20 @@
 %%
 -module(egd_colorscheme_SUITE).
 
+-include_lib("common_test/include/ct.hrl").
+
 %% callbacks
 
--export([
-	suite/0,
-	init_per_suite/1,
-	end_per_suite/1,
-	init_per_testcase/2,
-	end_per_testcase/2,
-	all/0
-    ]).
+-export([suite/0, all/0]).
 
-
--export([
-	hsl2rgb/1, 
-	rgb2hsl/1
-    ]).
-
--include_lib("common_test/include/ct.hrl").
+-export([hsl2rgb/1, 
+         rgb2hsl/1]).
 
 suite() ->
     [{timetrap,{seconds,180}}].
 
-init_per_suite(Config) ->
-    Config.
-
-end_per_suite(_Config) ->
-    ok.
-
-init_per_testcase(_TestCase, Config) ->
-    Config.
-
-end_per_testcase(_TestCase, _Config) ->
-    ok.
-
-groups() ->
-    [].
-
 all() -> 
     [hsl2rgb, rgb2hsl].
-
 
 check_rgb({R, G, B, _}) -> check_rgb({R, G, B});
 check_rgb({R, G, B}) when

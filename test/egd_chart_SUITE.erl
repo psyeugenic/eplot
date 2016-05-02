@@ -7,49 +7,20 @@
 %%
 
 -module(egd_chart_SUITE).
+-include_lib("common_test/include/ct.hrl").
 
 %% callbacks
 
--export([
-	suite/0,
-	init_per_suite/1,
-	end_per_suite/1,
-	init_per_testcase/2,
-	end_per_testcase/2,
-	all/0
-    ]).
+-export([all/0, suite/0]).
 
--export([
-	graph_api/1,
-	graph_api_opts/1
-    ]).
-
-
--include_lib("common_test/include/ct.hrl").
+-export([graph_api/1,
+         graph_api_opts/1]).
 
 suite() ->
     [{timetrap,{seconds,180}}].
 
-init_per_suite(Config) ->
-    Config.
-
-end_per_suite(_Config) ->
-    ok.
-
-init_per_testcase(_TestCase, Config) ->
-    Config.
-
-end_per_testcase(_TestCase, _Config) ->
-    ok.
-
-groups() ->
-    [].
-
 all() -> 
     [graph_api, graph_api_opts].
-
-
-check_chart_result(B) when is_binary(B) -> ok.
 
 graph_api(_Config) -> 
     D1 = [{"graph 1", make_simple_set(0, 100, 12)}],
@@ -72,25 +43,17 @@ graph_api(_Config) ->
 
     D7 = [{"graph 7", make_simple_set(-300, -10, 1)}|D6],
     ok = check_chart_result(egd_chart:graph(D7)),
-
-
     ok.
 
-check_graph_api_opts(_, []) -> ok;
-check_graph_api_opts(Data, [Opts|Os]) ->
-    ok = check_chart_result(egd_chart:graph(Data, Opts)),
-    check_graph_api_opts(Data, Os).
-
-
 graph_api_opts(_Config) -> 
-    Options   = [[
-	{width, Width}, {height, Height}, {margin, Margin}, 
-	{ticksize, Ticksize}, {x_range, Xrange}, {y_range, Yrange},
-	{y_label, Ylabel}, {x_label, Xlabel}, {bg_rgba, Rgba}] ||
+    Options = [
+        [{width, Width}, {height, Height}, {margin, Margin}, 
+         {ticksize, Ticksize}, {x_range, Xrange}, {y_range, Yrange},
+         {y_label, Ylabel}, {x_label, Xlabel}, {bg_rgba, Rgba}] ||
 
-	Width    <- [800, 1300],
-	Height   <- [800, 1024],
-	Margin   <- [30, 60],
+        Width    <- [400, 1300],
+        Height   <- [400, 1024],
+	Margin   <- [60],
 	Ticksize <- [{12,12}, {180,180}],
 	Xrange   <- [{0, 100}, {-1000, 1000}],
 	Yrange   <- [{0, 100}, {-1000, 1000}],
@@ -100,33 +63,17 @@ graph_api_opts(_Config) ->
     ],
     D1 = [{"graph 1", make_simple_set(0, 1200, 360)}],
     ok = check_graph_api_opts(D1, Options),
-
-    D2 = [{graph_2, make_simple_set(-30, -10, 4)}|D1],
-    ok = check_graph_api_opts(D2, Options),
-
     ok.
 
-%% aux
+check_graph_api_opts(_, []) -> ok;
+check_graph_api_opts(Data, [Opts|Os]) ->
+    T0 = os:timestamp(),
+    ok = check_chart_result(egd_chart:graph(Data, Opts)),
+    T1 = os:timestamp(),
+    io:format("graph ~.2f s~n", [timer:now_diff(T1,T0) / 1000000]),
+    check_graph_api_opts(Data, Os).
+
+check_chart_result(B) when is_binary(B) -> ok.
 
 make_simple_set(Min, Max, Step) ->
     [{X,30*math:sin(X)} || X <- lists:seq(Min,Max,Step)].
-
-%functions() ->
-%    [ 
-%	fun(X) -> 500/(X * X) + X end,
-%	fun(X) -> math:sqrt(X*X + 10*X) end,
-%	fun(X) -> X*math:sin(X/200*6.28) end
-%    ].
-%	
-%
-%add_dataset(Fun, Min, Max, Step, Sets) ->
-%    Name = "dataset " ++ integer_to_list(Min),
-%    [{Name, [{X, Fun(X)} || X <- lists:seq(Min,Max,Step)]}|Sets]. 
-%
-%add_errorset(Fun, Min, Max, Step, Sets) ->
-%    Name = "errorset " ++ integer_to_list(Min),
-%    [{Name, [{X, Fun(X), rand(X)} || X <- lists:seq(Min,Max,Step)]}|Sets]. 
-%
-%
-%rand(N) -> random:uniform(N).
-
