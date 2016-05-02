@@ -1,3 +1,11 @@
+%%
+%% Copyright (C) 2016 Björn-Egil Dahlberg
+%%
+%% File:    eplot_main.erl
+%% Author:  Björn-Egil Dahlberg
+%% Created: 2016-05-02
+%%
+
 -module(eplot_main).
 -export([png/3, view/2]).
 

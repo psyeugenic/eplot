@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2012 Hapida AB
+%% Copyright (C) 2016 Björn-Egil Dahlberg
 %%
 %% File:    egd_colorscheme_SUITE.erl
 %% Author:  Björn-Egil Dahlberg

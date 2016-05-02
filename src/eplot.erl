@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2012 Hapida AB
+%% Copyright (C) 2016 Björn-Egil Dahlberg
 %%
 %% File:    eplot.erl
 %% Author:  Björn-Egil Dahlberg

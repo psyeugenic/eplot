@@ -1,3 +1,11 @@
+%%
+%% Copyright (C) 2016 Björn-Egil Dahlberg
+%%
+%% File:    egd_chart.erl
+%% Author:  Björn-Egil Dahlberg
+%% Created: 2016-05-02
+%%
+
 -module(egd_chart).
 
 -export([
