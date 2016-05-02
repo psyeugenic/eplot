@@ -3,3 +3,4 @@ ebin/
 doc/
 rebar3
 rebar.lock
+*.swp
