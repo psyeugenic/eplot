@@ -5,7 +5,7 @@
 		egd_colorscheme,
 		egd_chart,
 		eplot_main,
-		eview
+		eplot_view
 	    ]},
 	{registered, []},
 	{applications, [

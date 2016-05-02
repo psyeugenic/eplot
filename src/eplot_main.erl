@@ -1,5 +1,5 @@
 -module(eplot_main).
--export([png/3, eview/2]).
+-export([png/3, view/2]).
 
 png(Inputs, Output, Options0) ->
     Options = merge_options(Options0, get_config()),
@@ -8,12 +8,12 @@ png(Inputs, Output, Options0) ->
     egd:save(B, Output),
     ok.
 
-eview(Inputs, Options0) ->
+view(Inputs, Options0) ->
     Options = proplists:delete(type, merge_options(Options0, get_config())),
     Data    = process_data(parse_data_files(Inputs), Options),
     W       = proplists:get_value(width, Options),
     H       = proplists:get_value(height, Options),
-    P       = eview:start({W,H}),
+    P       = eplot_view:start({W,H}),
     B       = graph_binary(proplists:get_value(plot, Options), Data, [{type, raw_bitmap}] ++ Options),
     P ! {self(), bmp_image, B, {W,H}},
     receive {P, done} -> ok end.
@@ -43,8 +43,6 @@ normalize_data_entries(Name, [{X,Y}|Entries], Norm) ->
 	Value ->
 	    [{X, Y/Value}|normalize_data_entries(Name, Entries, Norm)]
     end.
-
- 
 
 graph_binary(plot2d,Data, Options) ->
     egd_chart:graph(Data, Options);
@@ -127,5 +125,3 @@ make_config(Path, File) ->
 	    io:format("Error writing config. ~p ~p~n", [A,B]),
 	    Defaults
     end.
-    
-    

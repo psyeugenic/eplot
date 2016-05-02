@@ -43,7 +43,7 @@ main(Args) ->
     code:add_patha(ebin()),
     Input = proplists:get_value(input, Options, []),
     case proplists:get_value(o, Options) of
-	undefined -> eplot_main:eview(Input, Options);
+	undefined -> eplot_main:view(Input, Options);
 	Output    -> eplot_main:png(Input, Output, Options)
     end.
 
