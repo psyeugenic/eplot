@@ -8,46 +8,43 @@
 
 -module(egd_chart).
 
--export([
-	graph/1, 
-	graph/2, 
-	bar2d/1,
-	bar2d/2
-	]).
+-export([graph/1,
+         graph/2,
+         bar2d/1,
+         bar2d/2]).
 
 -export([smart_ticksize/3]).
 
 -type rgba() :: {byte(), byte(), byte(), byte()}.
 
 -record(chart, {
-	type = png,
-	render_engine = opaque,
-	margin = 30 :: non_neg_integer(),  % margin
-	bbx = {{30,30}, {130,130}},	   % Graph boundingbox (internal)
-	ibbx = undefined,
-	ranges = {{0,0}, {100,100}},       % Data boundingbox
-	width = 160 :: non_neg_integer(),  % Total chart width
-	height = 160 :: non_neg_integer(), % Total chart height
-	dxdy = {1.0,1.0},
-	ticksize = {10,10},
-	precision = {2,2},
+          type = png,
+          render_engine = opaque,
+          margin = 30 :: non_neg_integer(),  % margin
+          bbx = {{30,30}, {130,130}},	     % Graph boundingbox (internal)
+          ibbx = undefined,
+          ranges = {{0,0}, {100,100}},       % Data boundingbox
+          width = 160 :: non_neg_integer(),  % Total chart width
+          height = 160 :: non_neg_integer(), % Total chart height
+          dxdy = {1.0,1.0},
+          ticksize = {10,10},
+          precision = {2,2},
 
-	% colors
-	bg_rgba     = {230, 230, 255, 255} :: rgba(),
-	margin_rgba = {255, 255, 255, 255} :: rgba(),
-	graph_rgba  = [],		% ordered color convention
+          % colors
+          bg_rgba     = {230, 230, 255, 255} :: rgba(),
+          margin_rgba = {255, 255, 255, 255} :: rgba(),
+          graph_rgba  = [],		% ordered color convention
 
-	% graph specific
-	x_label = "X" :: string() | atom(),
-	y_label = "Y" :: string() | atom(),
-	graph_name_yo = 10 :: integer(), % Name offset from top
-	graph_name_yh = 10 :: integer(), % Name drop offset
-	graph_name_xo = 10 :: integer(), % Name offset from RHS
+          % graph specific
+          x_label = "X" :: string() | atom(),
+          y_label = "Y" :: string() | atom(),
+          graph_name_yo = 10 :: integer(), % Name offset from top
+          graph_name_yh = 10 :: integer(), % Name drop offset
+          graph_name_xo = 10 :: integer(), % Name offset from RHS
 
-	% bar2d specific
-	bar_width = 40,
-	column_width = 40
-	}).
+          % bar2d specific
+          bar_width = 40,
+          column_width = 40}).
 
 -define(float_error, 0.0000000000000001).
 
@@ -71,7 +68,7 @@
 %%		% Color options
 %%		{bg_rgba,    {byte(), byte(), byte()}}		
 %%	]
-graph(Data) -> graph(Data, [{width, 300}, {height, 300}]).
+graph(Data) -> graph(Data, [{width,300},{height,300}]).
 
 graph(Data, Options) ->
     Chart = graph_chart(Options,Data),
@@ -83,9 +80,9 @@ graph(Data, Options) ->
     % Fonts? Check for text enabling
 
     Font = egd_font:load(filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"])),
-  
+
     draw_graphs(Data, Chart, Im),
- 
+
     % estetic crop, necessary?
     {{X0,Y0}, {X1,Y1}} = Chart#chart.bbx,
     W = Chart#chart.width,
@@ -97,11 +94,11 @@ graph(Data, Options) ->
     egd:filledRectangle(Im, {0,Y1+1}, {W,H}, White),
 
     draw_ticks(Chart, Im, Font),
-    
+
     draw_origo_lines(Chart, Im), 	% draw origo crosshair
 
     draw_graph_names(Data, Chart, Font, Im),
-  
+
     draw_xlabel(Chart, Im, Font),
     draw_ylabel(Chart, Im, Font),
 
@@ -111,27 +108,28 @@ graph(Data, Options) ->
     Png.
 
 graph_chart(Opts, Data) ->
-    {{X0,Y0},{X1,Y1}} = proplists:get_value(ranges, Opts, ranges(Data)),
-    Type      = proplists:get_value(type,         Opts, png),
-    Width     = proplists:get_value(width,        Opts, 600),
-    Height    = proplists:get_value(height,       Opts, 600),
-    Xlabel    = proplists:get_value(x_label,      Opts, "X"),
-    Ylabel    = proplists:get_value(y_label,      Opts, "Y"),
+    {{X0,Y0},
+     {X1,Y1}} = proplists:get_value(ranges,        Opts, ranges(Data)),
+    Type      = proplists:get_value(type,          Opts, png),
+    Width     = proplists:get_value(width,         Opts, 600),
+    Height    = proplists:get_value(height,        Opts, 600),
+    Xlabel    = proplists:get_value(x_label,       Opts, "X"),
+    Ylabel    = proplists:get_value(y_label,       Opts, "Y"),
     %% multiple ways to set ranges
-    XrangeMax = proplists:get_value(x_range_max,  Opts, X1),
-    XrangeMin = proplists:get_value(x_range_min,  Opts, X0),
-    YrangeMax = proplists:get_value(y_range_max,  Opts, Y1),
-    YrangeMin = proplists:get_value(y_range_min,  Opts, Y0),
-    {Xr0,Xr1} = proplists:get_value(x_range,      Opts, {XrangeMin, XrangeMax}),
-    {Yr0,Yr1} = proplists:get_value(y_range,      Opts, {YrangeMin, YrangeMax}),
+    XrangeMax = proplists:get_value(x_range_max,   Opts, X1),
+    XrangeMin = proplists:get_value(x_range_min,   Opts, X0),
+    YrangeMax = proplists:get_value(y_range_max,   Opts, Y1),
+    YrangeMin = proplists:get_value(y_range_min,   Opts, Y0),
+    {Xr0,Xr1} = proplists:get_value(x_range,       Opts, {XrangeMin,XrangeMax}),
+    {Yr0,Yr1} = proplists:get_value(y_range,       Opts, {YrangeMin,YrangeMax}),
     Ranges    = {{Xr0, Yr0}, {Xr1,Yr1}},
     Precision = precision_level(Ranges, 10),
     {TsX,TsY} = smart_ticksize(Ranges, 10),
-    XTicksize = proplists:get_value(x_ticksize,   Opts, TsX),
-    YTicksize = proplists:get_value(y_ticksize,   Opts, TsY),
-    Ticksize  = proplists:get_value(ticksize,     Opts, {XTicksize, YTicksize}),
-    Margin    = proplists:get_value(margin,       Opts, 30),
-    BGC       = proplists:get_value(bg_rgba,      Opts, {230,230, 255, 255}),
+    XTicksize = proplists:get_value(x_ticksize,    Opts, TsX),
+    YTicksize = proplists:get_value(y_ticksize,    Opts, TsY),
+    Ticksize  = proplists:get_value(ticksize,      Opts, {XTicksize,YTicksize}),
+    Margin    = proplists:get_value(margin,        Opts, 30),
+    BGC       = proplists:get_value(bg_rgba,       Opts, {230,230, 255, 255}),
     Renderer  = proplists:get_value(render_engine, Opts, opaque),
 
     BBX       = {{Margin, Margin}, {Width - Margin, Height - Margin}},
@@ -181,7 +179,7 @@ draw_graphs([{_, Data}|Datas], ColorIndex, Chart, Im) ->
     GraphData = [xy2chart(Pt, Chart) || Pt <- Data],
     draw_graph(GraphData, Color, Im),
     draw_graphs(Datas, ColorIndex + 1, Chart, Im).
-   
+
 draw_graph([], _,_) -> ok;
 draw_graph([Pt1,Pt2|Data], Color, Im) ->
     draw_graph_dot(Pt1, Color, Im),
@@ -216,8 +214,7 @@ draw_graph_names([{Name, _}|Datas], ColorIndex, Chart, Font, Im, Yo, Yh) ->
     draw_graph_name_color(Chart, Im, Font, Name, Color, Yo),
     draw_graph_names(Datas, ColorIndex + 1, Chart, Font, Im, Yo + Yh, Yh).
 
-draw_graph_name_color(Chart, Im, Font, Name, Color, Yh) ->
-    {{_X0,Y0}, {X1,_Y1}} = Chart#chart.bbx,
+draw_graph_name_color(#chart{bbx={{_,Y0},{X1,_}}}=Chart, Im, Font, Name, Color, Yh) ->
     Xo   = Chart#chart.graph_name_xo,
     Yo   = Chart#chart.graph_name_yo,
     Xl   = 50,
@@ -234,17 +231,15 @@ draw_graph_name_color(Chart, Im, Font, Name, Color, Yh) ->
 
 %% origo crosshair
 
-draw_origo_lines(Chart, Im) ->
+draw_origo_lines(#chart{bbx={{X0,Y0},{X1,Y1}}}=Chart, Im) ->
     Black  = egd:color({20,20,20}),
     Black1 = egd:color({50,50,50}),
-    {{X0,Y0},{X1,Y1}} = Chart#chart.bbx,
-    {X,Y} = xy2chart({0,0}, Chart), 
-    if
-	X > X0, X < X1, Y > Y0, Y < Y1 -> 
-	    egd:filledRectangle(Im, {X0,Y}, {X1,Y}, Black1),
-	    egd:filledRectangle(Im, {X,Y0}, {X,Y1}, Black1);
-	true -> 
-	    ok
+    {X,Y}  = xy2chart({0,0}, Chart),
+
+    if X > X0, X < X1, Y > Y0, Y < Y1 ->
+            egd:filledRectangle(Im, {X0,Y}, {X1,Y}, Black1),
+            egd:filledRectangle(Im, {X,Y0}, {X,Y1}, Black1);
+       true -> ok
     end,
     egd:rectangle(Im, {X0,Y0}, {X1,Y1}, Black),
     ok.
@@ -291,15 +286,15 @@ tick_text(Im, Font, Tick, {X,Y}, Precision, Orientation) ->
     {Xl,Yl} = egd_font:size(Font),
     PxL = L*Xl,
     {Xo,Yo} = case Orientation of
-	above -> {-round(PxL/2), -Yl - 3};
-	below -> {-round(PxL/2), 3};
-	left  -> {round(-PxL - 4),-round(Yl/2) - 1};
-	right -> {3, -round(Yl/2)}
-    end,
+                  above -> {-round(PxL/2), -Yl - 3};
+                  below -> {-round(PxL/2), 3};
+                  left  -> {round(-PxL - 4),-round(Yl/2) - 1};
+                  right -> {3, -round(Yl/2)}
+              end,
     egd:text(Im, {X + Xo,Y + Yo}, Font, String, egd:color({0,0,0})).
 
 % background tick bars, should be drawn with background
-    
+
 draw_perf_ybar(Im, Chart, Yi) ->
     Pw = 5,
     Lw = 10,
@@ -321,7 +316,6 @@ draw_perf_xbar(Im, Chart, Xi) ->
                         egd:filledRectangle(Im, {Xi,Y}, {Xi, Y+Pw}, Color)
                 end, Yu,Yl,Lw),
     ok.
-
 
 %% bar2d/1 and bar2d/2
 %% In:
@@ -349,9 +343,7 @@ bar2d(Data0, Options) ->
     {Pt1, Pt2} = Chart#chart.bbx,
     egd:filledRectangle(Im, Pt1, Pt2, LightBlue), % background
 
-    
     % Fonts? Check for text enabling
-
     Font = egd_font:load(filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"])),
 
     draw_bar2d_ytick(Im, Chart, Font),
@@ -361,13 +353,13 @@ bar2d(Data0, Options) ->
 
     % Draw bars
     draw_bar2d_data(Data, Chart, Font, Im),
-  
+
     egd:rectangle(Im, Pt1, Pt2, egd:color({0,0,0})),
     Png = egd:render(Im, Chart#chart.type, [{render_engine, Chart#chart.render_engine}]),
     egd:destroy(Im),
     try erlang:exit(Im, normal) catch _:_ -> ok end,
     Png.
-    
+
 % [{Dataset, [{Key, Value}]}] -> [{Key, [{Dataset, Value}]}]
 bar2d_convert_data(Data) -> bar2d_convert_data(Data, 0,{[], []}).
 bar2d_convert_data([], _, {ColorMap, Out}) -> {lists:reverse(ColorMap), lists:sort(Out)};
@@ -380,44 +372,45 @@ bar2d_convert_data_kvs([{Key, Value,_} | KVs], Set, Color, Out) ->
     bar2d_convert_data_kvs([{Key, Value} | KVs], Set, Color, Out);
 bar2d_convert_data_kvs([{Key, Value}|KVs], Set, Color, Out) ->
     case proplists:get_value(Key, Out) of 
-	undefined ->
-	    bar2d_convert_data_kvs(KVs, Set, Color, [{Key, [{{Color, Set}, Value}]}|Out]);
-	DVs ->
-	    bar2d_convert_data_kvs(KVs, Set, Color, [{Key, [{{Color, Set}, Value} | DVs]} | proplists:delete(Key, Out)])
+        undefined ->
+            bar2d_convert_data_kvs(KVs, Set, Color, [{Key,[{{Color, Set}, Value}]}|Out]);
+        DVs ->
+            bar2d_convert_data_kvs(KVs, Set, Color, [{Key,[{{Color, Set}, Value}|DVs]}|proplists:delete(Key, Out)])
     end.
-    
+
 % beta color map, static allocated
 
 bar2d_chart(Opts, Data) ->
-    Values = lists:foldl(fun
-	({_, DVs}, Out) ->
-	    Vs = [V || {_,V} <- DVs],
-	    Out ++ Vs
-	end, [], Data),
-    Type     = proplists:get_value(type,          Opts, png),
-    Margin   = proplists:get_value(margin,        Opts, 30),
-    Width    = proplists:get_value(width,         Opts, 600),
-    Height   = proplists:get_value(height,        Opts, 600),
-    XrangeMax = proplists:get_value(x_range_max,  Opts, length(Data)),
-    XrangeMin = proplists:get_value(x_range_min,  Opts, 0),
-    YrangeMax = proplists:get_value(y_range_max,  Opts, lists:max(Values)),
-    YrangeMin = proplists:get_value(y_range_min,  Opts, 0),
-    {Yr0,Yr1} = proplists:get_value(y_range,      Opts, {YrangeMin, YrangeMax}),
-    {Xr0,Xr1} = proplists:get_value(x_range,      Opts, {XrangeMin, XrangeMax}),
-    Ranges   = proplists:get_value(ranges,        Opts, {{Xr0, Yr0}, {Xr1,Yr1}}),
-    Ticksize = proplists:get_value(ticksize,      Opts, smart_ticksize(Ranges, 10)),
-    Cw       = proplists:get_value(column_width,  Opts, {ratio, 0.8}),
-    Bw       = proplists:get_value(bar_width,     Opts, {ratio, 1.0}),
-    InfoW    = proplists:get_value(info_box,      Opts, 0),
-    Renderer = proplists:get_value(render_engine, Opts, opaque),
+    Values = lists:foldl(fun ({_, DVs}, Out) ->
+                                 Vs = [V || {_,V} <- DVs],
+                                 Out ++ Vs
+                         end, [], Data),
+    Type      = proplists:get_value(type,          Opts, png),
+    Margin    = proplists:get_value(margin,        Opts, 30),
+    Width     = proplists:get_value(width,         Opts, 600),
+    Height    = proplists:get_value(height,        Opts, 600),
+    XrangeMax = proplists:get_value(x_range_max,   Opts, length(Data)),
+    XrangeMin = proplists:get_value(x_range_min,   Opts, 0),
+    YrangeMax = proplists:get_value(y_range_max,   Opts, lists:max(Values)),
+    YrangeMin = proplists:get_value(y_range_min,   Opts, 0),
+    {Yr0,Yr1} = proplists:get_value(y_range,       Opts, {YrangeMin, YrangeMax}),
+    {Xr0,Xr1} = proplists:get_value(x_range,       Opts, {XrangeMin, XrangeMax}),
+    Ranges    = proplists:get_value(ranges,        Opts, {{Xr0, Yr0}, {Xr1,Yr1}}),
+    Ticksize  = proplists:get_value(ticksize,      Opts, smart_ticksize(Ranges, 10)),
+    Cw        = proplists:get_value(column_width,  Opts, {ratio, 0.8}),
+    Bw        = proplists:get_value(bar_width,     Opts, {ratio, 1.0}),
+    InfoW     = proplists:get_value(info_box,      Opts, 0),
+    Renderer  = proplists:get_value(render_engine, Opts, opaque),
     % colors
-    BGC      = proplists:get_value(bg_rgba,       Opts, {230, 230, 255, 255}),
-    MGC      = proplists:get_value(margin_rgba,   Opts, {255, 255, 255, 255}),
+    BGC       = proplists:get_value(bg_rgba,       Opts, {230, 230, 255, 255}),
+    MGC       = proplists:get_value(margin_rgba,   Opts, {255, 255, 255, 255}),
 
     % bounding box
-    IBBX     = {{Width - Margin - InfoW, Margin}, {Width - Margin, Height - Margin}},
-    BBX      = {{Margin, Margin}, {Width - Margin - InfoW - 10, Height - Margin}},
-    DxDy     = update_dxdy(Ranges, BBX),
+    IBBX = {{Width - Margin - InfoW, Margin},
+            {Width - Margin, Height - Margin}},
+    BBX  = {{Margin, Margin},
+            {Width - Margin - InfoW - 10, Height - Margin}},
+    DxDy = update_dxdy(Ranges, BBX),
 
     #chart{type          = Type,
            margin        = Margin,
@@ -454,7 +447,7 @@ draw_bar2d_ytick(Im, Chart, Font) ->
     {_, Yts}               = Chart#chart.ticksize,
     {{_, _}, {_, Ymax}} = Chart#chart.ranges,
     draw_bar2d_yticks_up(Im, Chart, Yts, Yts, Ymax, Font).   %% UPPER tick points
-    
+
 draw_bar2d_yticks_up(Im, Chart, Yi, Yts, Ymax, Font) when Yi < Ymax ->
     {X, Y}         = xy2chart({0,Yi}, Chart),
     {_, Precision} = Chart#chart.precision,
@@ -487,10 +480,10 @@ draw_bar2d_data_columns([{Name, Bars} | Columns], Chart, Font, Im, Cx, Co) ->
     {{_X0,_Y0}, {_X1,Y1}} = Chart#chart.bbx,
 
     Cwb = case Chart#chart.column_width of
-	default -> Co;
-	{ratio, P} when is_number(P) -> P*Co;
-	Cw when is_number(Cw) -> lists:min([Cw,Co])
-    end,
+              default -> Co;
+              {ratio, P} when is_number(P) -> P*Co;
+              Cw when is_number(Cw) -> lists:min([Cw,Co])
+          end,
 
     %% draw column text
     String = string(Name, 2),
@@ -515,10 +508,10 @@ draw_bar2d_data_bars([{{Color,_Set}, Value}|Bars], Chart, Font, Im, Bx, Bo,CS) -
     {_, Y}             = xy2chart({0, Value}, Chart),
 
     Bwb = case Chart#chart.bar_width of
-	default -> Bo;
-	{ratio, P} when is_number(P) -> P*Bo;
-	Bw when is_number(Bw) -> lists:min([Bw,Bo])
-    end,
+              default -> Bo;
+              {ratio, P} when is_number(P) -> P*Bo;
+              Bw when is_number(Bw) -> lists:min([Bw,Bo])
+          end,
 
 
     Black = egd:color({0,0,0}),
@@ -531,7 +524,7 @@ draw_bar2d_data_bars([{{Color,_Set}, Value}|Bars], Chart, Font, Im, Bx, Bo,CS) -
     Tpt = {trunc(Bx - L/2 + 2), Y - Fh - 5},
     egd:text(Im, Tpt, Font, String, Black),
 
-   
+
     Pt1 = {trunc(Bx - Bwb/2), Y},
     Pt2 = {trunc(Bx + Bwb/2), Y1},
     egd:filledRectangle(Im, Pt1, Pt2, Color),
@@ -545,11 +538,10 @@ draw_bar2d_data_bars([{{Color,_Set}, Value}|Bars], Chart, Font, Im, Bx, Bo,CS) -
 %%==========================================================================
 
 
-xy2chart({X,Y}, #chart{ 
-	ranges = {{Rx0,Ry0}, {_Rx1,_Ry1}}, 
-	bbx    = {{Bx0,By0}, {_Bx1, By1}}, 
-	dxdy   = {Dx, Dy}, 
-	margin = Margin } ) ->
+xy2chart({X,Y}, #chart{ranges = {{Rx0,Ry0}, {_Rx1,_Ry1}},
+                       bbx    = {{Bx0,By0}, {_Bx1, By1}},
+                       dxdy   = {Dx, Dy},
+                       margin = Margin}) ->
     {round(X*Dx + Bx0 - Rx0*Dx), round(By1 - (Y*Dy + By0 - Ry0*Dy - Margin))};
 xy2chart({X,Y,Error}, Chart) ->
     {Xc,Yc} = xy2chart({X,Y}, #chart{ dxdy = {_,Dy} } = Chart),
@@ -564,61 +556,52 @@ ranges([{_Name, Es}|Data], CoRanges) when is_list(Es) ->
     Ranges = xy_minmax(Es),
     ranges(Data, xy_resulting_ranges(Ranges, CoRanges)).
 
-    
+
 smart_ticksize({{X0, Y0}, {X1, Y1}}, N) ->
-    { smart_ticksize(X0,X1,N), smart_ticksize(Y0,Y1,N)}.
+    {smart_ticksize(X0,X1,N), smart_ticksize(Y0,Y1,N)}.
 
 
 smart_ticksize(S, E, N) when is_number(S), is_number(E), is_number(N) ->
     % Calculate stepsize then 'humanize' the value to a human pleasing format.
     R = abs((E - S))/N,
-    if 
-	abs(R) < ?float_error -> 2.0;
-	true ->
-	    % get the ratio on the form of 2-3 significant digits.
-	    %V =  2 - math:log10(R),
-	    %P = trunc(V + 0.5),
-	    P = precision_level(S, E, N),
-	    M = math:pow(10, P),
-	    Vsig = R*M,
-	    %% do magic    
-	    Rsig = Vsig/50,
-	    Hsig = 50 * trunc(Rsig + 0.5),
-	    %% fin magic
-	    Hsig/M
+    if abs(R) < ?float_error -> 2.0;
+       true ->
+           % get the ratio on the form of 2-3 significant digits.
+           P = precision_level(S, E, N),
+           M = math:pow(10, P),
+           Vsig = R*M,
+           %% do magic
+           Rsig = Vsig/50,
+           Hsig = 50 * trunc(Rsig + 0.5),
+           %% fin magic
+           Hsig/M
     end;
 smart_ticksize(_, _, _) -> 2.0.
 
 precision_level({{X0, Y0}, {X1, Y1}}, N) ->
-     { precision_level(X0,X1,N), precision_level(Y0,Y1,N)}.
+    { precision_level(X0,X1,N), precision_level(Y0,Y1,N)}.
 
 precision_level(S, E, N) when is_number(S), is_number(E) ->
     % Calculate stepsize then 'humanize' the value to a human pleasing format.
     R = abs((E - S))/N,
-    if 
-	abs(R) < ?float_error -> 2;
-	true ->
-	    % get the ratio on the form of 2-3 significant digits.
-	    V =  2 - math:log10(R),
-	    trunc(V + 0.5)
+    if abs(R) < ?float_error -> 2;
+       true ->
+           % get the ratio on the form of 2-3 significant digits.
+           V =  2 - math:log10(R),
+           trunc(V + 0.5)
     end;
 precision_level(_, _, _) -> 2.
 
 % on form [{X,Y}] | [{X,Y,E}]
 xy_minmax(Elements) ->
-    {Xs, Ys} = lists:foldl(fun
-	    ({X,Y,_}, {Xis, Yis}) -> {[X|Xis],[Y|Yis]};
-	    ({X,Y},   {Xis, Yis}) -> {[X|Xis],[Y|Yis]}
-	end, {[],[]}, Elements),
-    {{lists:min(Xs),lists:min(Ys)}, {lists:max(Xs), lists:max(Ys)}}.
+    {Xs, Ys} = lists:foldl(fun ({X,Y,_},{Xis, Yis}) -> {[X|Xis],[Y|Yis]};
+                               ({X,Y},  {Xis, Yis}) -> {[X|Xis],[Y|Yis]}
+                           end, {[],[]}, Elements),
+    {{lists:min(Xs),lists:min(Ys)},{lists:max(Xs), lists:max(Ys)}}.
 
 xy_resulting_ranges({{X0,Y0},{X1,Y1}},{{X2,Y2},{X3,Y3}}) ->
-    { 	
-	{lists:min([X0,X1,X2,X3]),
-	 lists:min([Y0,Y1,Y2,Y3])},
-	{lists:max([X0,X1,X2,X3]),
-	 lists:max([Y0,Y1,Y2,Y3])}
-    }.
+    {{lists:min([X0,X1,X2,X3]),lists:min([Y0,Y1,Y2,Y3])},
+     {lists:max([X0,X1,X2,X3]),lists:max([Y0,Y1,Y2,Y3])}}.
 
 update_dxdy({{Rx0, Ry0}, {Rx1, Ry1}}, {{Bx0,By0},{Bx1,By1}}) ->
     Dx = divide((Bx1 - Bx0),(Rx1 - Rx0)),
@@ -626,7 +609,6 @@ update_dxdy({{Rx0, Ry0}, {Rx1, Ry1}}, {{Bx0,By0},{Bx1,By1}}) ->
     {Dx,Dy}.
 
 divide(_T,N) when abs(N) < ?float_error -> 0.0;
-%divide(T,N) when abs(N) < ?float_error -> exit({bad_divide, {T,N}});
 divide(T,N) -> T/N.
 
 %print_info_chart(Chart) ->
@@ -650,14 +632,8 @@ string(E, _P) when is_list(E)    -> s("~s", [E]).
 float_to_maybe_integer_to_string(F, P) ->
     I = trunc(F),
     A = abs(I - F),
-    if 
-	% integer
-	A < ?float_error -> s("~w", [I]);
-
-	true ->
-	% float
-	    Format = s("~~.~wf", [P]),
-	    s(Format, [F])
+    if A < ?float_error -> s("~w", [I]); % integer
+       true -> s(s("~~.~wf", [P]), [F])  % float
     end.
 
 s(Format, Terms) ->
