@@ -79,7 +79,7 @@ graph(Data, Options) ->
 
     % Fonts? Check for text enabling
 
-    Font = egd_font:load(filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"])),
+    Font = egd_font:load(filename:join([code:priv_dir(egd), "fonts", "6x11_latin1.wingsfont"])),
 
     draw_graphs(Data, Chart, Im),
 
@@ -344,7 +344,7 @@ bar2d(Data0, Options) ->
     egd:filledRectangle(Im, Pt1, Pt2, LightBlue), % background
 
     % Fonts? Check for text enabling
-    Font = egd_font:load(filename:join([code:priv_dir(percept), "fonts", "6x11_latin1.wingsfont"])),
+    Font = egd_font:load(filename:join([code:priv_dir(egd), "fonts", "6x11_latin1.wingsfont"])),
 
     draw_bar2d_ytick(Im, Chart, Font),
 
