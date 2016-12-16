@@ -11,7 +11,7 @@
 	{applications, [
 		kernel,
 		stdlib,
-		percept,
+		egd,
 		wx
 	    ]}
     ]}.
