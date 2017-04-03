@@ -79,7 +79,7 @@ graph(Data, Options) ->
 
     % Fonts? Check for text enabling
 
-    Font = egd_font:load(filename:join([code:priv_dir(egd), "fonts", "6x11_latin1.wingsfont"])),
+    Font = load_font("6x11_latin1.wingsfont"),
 
     draw_graphs(Data, Chart, Im),
 
@@ -344,7 +344,7 @@ bar2d(Data0, Options) ->
     egd:filledRectangle(Im, Pt1, Pt2, LightBlue), % background
 
     % Fonts? Check for text enabling
-    Font = egd_font:load(filename:join([code:priv_dir(egd), "fonts", "6x11_latin1.wingsfont"])),
+    Font = load_font("6x11_latin1.wingsfont"),
 
     draw_bar2d_ytick(Im, Chart, Font),
 
@@ -653,3 +653,13 @@ foreach_seq_loop(0, _, _, _) -> ok;
 foreach_seq_loop(N, I, Inc, Fun) ->
     _ = Fun(I),
     foreach_seq_loop(N-1, I+Inc, Inc, Fun).
+
+load_font(Font) ->
+    case erl_prim_loader:get_file(filename:join([code:priv_dir(eplot),"fonts",Font])) of
+        {ok,FontBinary,_} ->
+            %% archive
+            egd_font:load_binary(FontBinary);
+        _ ->
+            {ok,FontBinary,_} = erl_prim_loader:get_file(filename:join([code:priv_dir(eplot),"eplot/priv/fonts",Font])),
+            egd_font:load_binary(FontBinary)
+    end.
